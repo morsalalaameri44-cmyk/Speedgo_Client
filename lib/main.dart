@@ -1,15 +1,18 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase/supabase.dart';
 
-Future<void> main() async {
+// تعريف عميل Supabase العام
+late final SupabaseClient supabase;
+
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تهيئة Supabase بنفس بيانات المشروع
-  await Supabase.initialize(
-    url: 'https://ldefaxirgruqulxhkaqh.supabase.co',
-    anonKey: 'sb_publishable_Gsn2xn5DjAJehY0SGFubzw_KxV-hG-4',
+  // تهيئة Supabase مباشرة
+  supabase = SupabaseClient(
+    'https://ldefaxirgruqulxhkaqh.supabase.co',
+    'sb_publishable_Gsn2xn5DjAJehY0SGFubzw_KxV-hG-4',
   );
 
   runApp(const SpeedGoApp());
@@ -51,7 +54,7 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
   }
 
   void _checkExistingSession() {
-    final session = Supabase.instance.client.auth.currentSession;
+    final session = supabase.auth.currentSession;
     if (session != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToHome();
@@ -305,12 +308,12 @@ class _AuthCardState extends State<AuthCard> {
 
     try {
       if (_isLogin) {
-        await Supabase.instance.client.auth.signInWithPassword(
+        await supabase.auth.signInWithPassword(
           email: email,
           password: password,
         );
       } else {
-        await Supabase.instance.client.auth.signUp(
+        await supabase.auth.signUp(
           email: email,
           password: password,
           data: {'full_name': name},
