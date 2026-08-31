@@ -25,11 +25,27 @@ jobs:
           flutter-version: '3.24.x'
           channel: 'stable'
 
-      - name: Generate and Configure Android Project
+      - name: Generate Android Project
         run: |
           flutter create --project-name speedgo_client --platforms=android --org com.speedgo .
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/g' android/app/build.gradle || true
-          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/g' android/app/build.gradle || true
+
+      - name: Fix Legacy Plugins Gradle SDK
+        run: |
+          cat << 'EOF' >> android/build.gradle
+
+          subprojects {
+              afterEvaluate { project ->
+                  if (project.hasProperty('android')) {
+                      project.android {
+                          if (namespace == null) {
+                              namespace project.group
+                          }
+                          compileSdkVersion 34
+                      }
+                  }
+              }
+          }
+          EOF
 
       - name: Install Dependencies
         run: flutter pub get
