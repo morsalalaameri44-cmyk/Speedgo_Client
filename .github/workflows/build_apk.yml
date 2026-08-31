@@ -22,18 +22,46 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.x'
+          flutter-version: '3.22.x'
           channel: 'stable'
 
-      - name: Recreate Clean Native Project
+      - name: Generate Clean Project
         run: |
           rm -rf android/
           flutter create --project-name speedgo_client --platforms=android --org com.speedgo .
 
-      - name: Patch Android CompileSdk For Plugins
+      - name: Fix AppLinks and Gradle Compatibility
         run: |
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/g' android/app/build.gradle
-          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/g' android/app/build.gradle
+          cat << 'EOF' > fix.gradle
+          allprojects {
+              afterEvaluate { project ->
+                  if (project.plugins.hasPlugin("com.android.application") ||
+                      project.plugins.hasPlugin("com.android.library")) {
+                      project.android {
+                          compileSdkVersion 34
+                          buildToolsVersion "34.0.0"
+                          if (namespace == null) {
+                              namespace project.group
+                          }
+                      }
+                  }
+              }
+          }
+          EOF
+          sed -i '/apply from: "\$flutterRoot\/packages\/flutter_tools\/gradle\/app_plugin_loader.gradle"/i apply from: file("fix.gradle")' android/settings.gradle || true
+          cat fix.gradle >> android/build.gradle
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeedGo-Flutter-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Install Dependencies
         run: flutter pub get
