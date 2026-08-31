@@ -27,13 +27,19 @@ jobs:
 
       - name: Generate Android Native Platforms
         run: |
-          flutter create --platforms=android --org com.speedgo .
+          flutter create --project-name speedgo_client --platforms=android --org com.speedgo .
 
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Build Release APK
         run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeedGo-Flutter-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
