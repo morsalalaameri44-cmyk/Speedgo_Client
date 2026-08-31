@@ -25,27 +25,15 @@ jobs:
           flutter-version: '3.24.x'
           channel: 'stable'
 
-      - name: Generate Android Project
+      - name: Recreate Clean Native Project
         run: |
+          rm -rf android/
           flutter create --project-name speedgo_client --platforms=android --org com.speedgo .
 
-      - name: Fix Legacy Plugins Gradle SDK
+      - name: Patch Android CompileSdk For Plugins
         run: |
-          cat << 'EOF' >> android/build.gradle
-
-          subprojects {
-              afterEvaluate { project ->
-                  if (project.hasProperty('android')) {
-                      project.android {
-                          if (namespace == null) {
-                              namespace project.group
-                          }
-                          compileSdkVersion 34
-                      }
-                  }
-              }
-          }
-          EOF
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/g' android/app/build.gradle
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/g' android/app/build.gradle
 
       - name: Install Dependencies
         run: flutter pub get
