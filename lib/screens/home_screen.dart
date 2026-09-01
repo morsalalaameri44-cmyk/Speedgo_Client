@@ -1,0 +1,706 @@
+import 'dart:math';
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:supabase/supabase.dart';
+
+class HomeScreen extends StatefulWidget {
+  final SupabaseClient supabase;
+  const HomeScreen({super.key, required this.supabase});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+  List<Map<String, dynamic>> _categories = [];
+  List<Map<String, dynamic>> _stores = [];
+  List<Map<String, dynamic>> _filteredStores = [];
+  bool _isLoadingCategories = true;
+  bool _isLoadingStores = true;
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<List<Color>> _categoryGradients = [
+    [const Color(0xFFFF9F1C), const Color(0xFFF25C05)],
+    [const Color(0xFFFF7EB3), const Color(0xFFFF758C)],
+    [const Color(0xFF52B788), const Color(0xFF2D6A4F)],
+    [const Color(0xFF48CAE4), const Color(0xFF0077B6)],
+    [const Color(0xFFB5179E), const Color(0xFF7209B7)],
+    [const Color(0xFF439A86), const Color(0xFF00725B)],
+    [const Color(0xFFD4A373), const Color(0xFFA98467)],
+    [const Color(0xFF8D99AE), const Color(0xFF2B2D42)],
+    [const Color(0xFFE07A5F), const Color(0xFF3D405B)],
+    [const Color(0xFFF4A261), const Color(0xFFE76F51)],
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+    _fetchStores();
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final res = await widget.supabase
+          .from('categories')
+          .select()
+          .order('sort_order', ascending: true);
+      if (mounted) {
+        setState(() {
+          _categories = List<Map<String, dynamic>>.from(res);
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingCategories = false);
+    }
+  }
+
+  Future<void> _fetchStores() async {
+    try {
+      final res = await widget.supabase.from('stores').select();
+      if (mounted) {
+        setState(() {
+          _stores = List<Map<String, dynamic>>.from(res);
+          _filteredStores = _stores;
+          _isLoadingStores = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingStores = false);
+    }
+  }
+
+  void _onSearch(String query) {
+    final clean = query.trim().toLowerCase();
+    setState(() {
+      if (clean.isEmpty) {
+        _filteredStores = _stores;
+      } else {
+        _filteredStores = _stores.where((s) {
+          final name = (s['name'] ?? s['store_name'] ?? '').toString().toLowerCase();
+          return name.contains(clean);
+        }).toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                _buildHeader(),
+                _buildSearchSection(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.only(bottom: 95),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBannersSlider(),
+                        _buildSectionHeader('أقسام Speed Go', showViewAll: true, onViewAll: () {}),
+                        _buildCategoriesGrid(),
+                        _buildSectionHeader('المتاجر المتاحة بالقرب منك'),
+                        _buildStoresList(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildBottomNav(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ستفتح خريطة تحديد موقع التوصيل في التحديث القادم!')),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF2EB),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.location_on, color: Color(0xFFF25C05), size: 20),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('التوصيل إلى', style: TextStyle(fontSize: 12, color: Color(0xFF757575), fontWeight: FontWeight.w500)),
+                    Row(
+                      children: [
+                        Text('عدن - خورمكسر', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+                        SizedBox(width: 3),
+                        Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF1A1A1A)),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('لا توجد إشعارات جديدة حالياً، طلباتك كلها تمام!')),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEFEFEF)),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  const Icon(Icons.notifications_none_rounded, color: Color(0xFF1A1A1A), size: 22),
+                  Positioned(
+                    top: 10,
+                    right: 11,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE63946),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSection() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F6F6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFF0F0F0)),
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: _onSearch,
+          style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
+          decoration: const InputDecoration(
+            hintText: 'ابحث عن مطعم، سوبرماركت، صيدلية...',
+            hintStyle: TextStyle(fontSize: 13, color: Color(0xFF757575)),
+            prefixIcon: Icon(Icons.search, color: Color(0xFF757575), size: 20),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannersSlider() {
+    final banners = [
+      {
+        'title': 'عرض Speed Go الخاطف!',
+        'subtitle': 'توصيل مجاني لجميع طلبات السوبرماركت اليوم',
+        'btn': 'اطلب الآن',
+        'colors': [const Color(0xFFFF6B35), const Color(0xFFF25C05)],
+        'icon': Icons.bolt_rounded,
+      },
+      {
+        'title': 'صحتك تهمنا',
+        'subtitle': 'اطلب أدويتك ومستلزماتك من أقرب صيدلية بلحظات',
+        'btn': 'تصفح الصيدليات',
+        'colors': [const Color(0xFF00B4D8), const Color(0xFF0077B6)],
+        'icon': Icons.medical_services_rounded,
+      },
+    ];
+
+    return SizedBox(
+      height: 155,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: banners.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, index) {
+          final b = banners[index];
+          return Container(
+            width: MediaQuery.of(context).size.width * 0.82,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: b['colors'] as List<Color>,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: (b['colors'] as List<Color>)[1].withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: -15,
+                  bottom: -20,
+                  child: Icon(
+                    b['icon'] as IconData,
+                    size: 130,
+                    color: Colors.white.withOpacity(0.15),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        b['title'] as String,
+                        style: const TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        b['subtitle'] as String,
+                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          b['btn'] as String,
+                          style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 11, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {bool showViewAll = false, VoidCallback? onViewAll}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+          if (showViewAll)
+            GestureDetector(
+              onTap: onViewAll,
+              child: const Text('عرض الكل', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFFF25C05))),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoriesGrid() {
+    if (_isLoadingCategories) {
+      return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Color(0xFFF25C05))));
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 12,
+        mainAxisExtent: 145,
+      ),
+      itemCount: _categories.length,
+      itemBuilder: (context, index) {
+        final cat = _categories[index];
+        final name = (cat['name'] ?? '').toString().trim();
+        final img = cat['image_url'] ?? '';
+        final gradient = _categoryGradients[index % _categoryGradients.length];
+
+        return CategoryItemCard(
+          name: name,
+          imageUrl: img,
+          gradient: gradient,
+          onTap: () {},
+        );
+      },
+    );
+  }
+
+  Widget _buildStoresList() {
+    if (_isLoadingStores) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(30),
+          child: Column(
+            children: [
+              CircularProgressIndicator(color: Color(0xFFF25C05)),
+              SizedBox(height: 10),
+              Text('جاري جلب المتاجر...', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF757575))),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredStores.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Column(
+            children: [
+              Icon(Icons.store_mall_directory_outlined, size: 45, color: Color(0xFFBDBDBD)),
+              SizedBox(height: 8),
+              Text('لا توجد متاجر مطابقة حالياً!', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF757575))),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      itemCount: _filteredStores.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 14),
+      itemBuilder: (context, index) {
+        final store = _filteredStores[index];
+        final name = store['name'] ?? store['store_name'] ?? 'متجر غير مسمى';
+        final cat = store['category'] ?? 'عام';
+        final img = store['logo_url'] ?? 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=200&q=80';
+
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            border: Border.all(color: const Color(0xFFFDFDFD)),
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 85,
+                  height: 85,
+                  color: const Color(0xFFF5F5F5),
+                  child: Image.network(
+                    img,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.store, color: Color(0xFFBDBDBD), size: 35),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      cat,
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF757575), fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: const [
+                        Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFB300)),
+                        SizedBox(width: 2),
+                        Text('4.5', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                        SizedBox(width: 10),
+                        Icon(Icons.access_time_filled_rounded, size: 14, color: Color(0xFF5C677D)),
+                        SizedBox(width: 2),
+                        Text('30 دقيقة', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                        SizedBox(width: 10),
+                        Icon(Icons.delivery_dining_rounded, size: 16, color: Color(0xFF2A9D8F)),
+                        SizedBox(width: 2),
+                        Text('سريع', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomNav() {
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: Color(0xFFEFEFEF))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavItem(0, Icons.home_rounded, 'الرئيسية'),
+          _buildNavItem(1, Icons.assignment_outlined, 'طلباتي'),
+          _buildNavItem(2, Icons.shopping_bag_outlined, 'السلة', badge: '2'),
+          _buildNavItem(3, Icons.person_outline_rounded, 'حسابي'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label, {String? badge}) {
+    final isSelected = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = index),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                icon,
+                size: 22,
+                color: isSelected ? const Color(0xFFF25C05) : const Color(0xFF757575),
+              ),
+              if (badge != null)
+                Positioned(
+                  top: -5,
+                  right: -8,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF25C05),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                    child: Center(
+                      child: Text(
+                        badge,
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              color: isSelected ? const Color(0xFFF25C05) : const Color(0xFF757575),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// كارت القسم التفاعلي مع حركة الاهتزاز والزجاج
+class CategoryItemCard extends StatefulWidget {
+  final String name;
+  final String imageUrl;
+  final List<Color> gradient;
+  final VoidCallback onTap;
+
+  const CategoryItemCard({
+    super.key,
+    required this.name,
+    required this.imageUrl,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  @override
+  State<CategoryItemCard> createState() => _CategoryItemCardState();
+}
+
+class _CategoryItemCardState extends State<CategoryItemCard> with SingleTickerProviderStateMixin {
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+
+    _shakeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_shakeController);
+  }
+
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
+  void _triggerShake() {
+    _shakeController.forward(from: 0.0).then((_) {
+      widget.onTap();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _shakeAnimation,
+      builder: (context, child) {
+        final val = _shakeAnimation.value;
+        final rotation = val == 0 ? 0.0 : sin(val * pi * 8) * 0.08;
+        final scale = val == 0 ? 1.0 : 1.0 + (sin(val * pi * 4).abs() * 0.05);
+
+        return Transform.scale(
+          scale: scale,
+          child: Transform.rotate(
+            angle: rotation,
+            child: GestureDetector(
+              onTap: _triggerShake,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: widget.gradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          widget.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox(),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      left: 6,
+                      right: 6,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.92),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              widget.name,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF1A1A1A),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
