@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase/supabase.dart';
 
-// رابط الشعار المفرغ الرسمي
-const String kLogoUrl = 'https://i.imgur.com/vHqQZrM.png';
-// رابط خلفية الطعام الخشبية الداكنة
+const String kLogoAsset = 'logo.png';
 const String kBgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1080&q=80';
 
 late final SupabaseClient supabase;
@@ -56,7 +54,6 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
       backgroundColor: const Color(0xFF080C14),
       body: Stack(
         children: [
-          // 1. خلفية الطعام الخشبية مع التدرج اللوني والتعتيم المطابق للويب
           Positioned.fill(
             child: Image.network(
               kBgUrl,
@@ -77,8 +74,6 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
               ),
             ),
           ),
-
-          // 2. بطاقة تسجيل الدخول الزجاجية
           Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -86,8 +81,6 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
               child: const AuthCard(),
             ),
           ),
-
-          // 3. شاشة البداية الافتتاحية مع الوميض والتوهج
           if (_showSplash)
             AnimatedOpacity(
               opacity: _showSplash ? 1.0 : 0.0,
@@ -106,9 +99,6 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
   }
 }
 
-// ==========================================
-// شاشة البداية (Splash Screen مع الشعار والوميض)
-// ==========================================
 class SplashScreenOverlay extends StatefulWidget {
   final VoidCallback onStartPressed;
   const SplashScreenOverlay({super.key, required this.onStartPressed});
@@ -128,7 +118,6 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
   void initState() {
     super.initState();
 
-    // حركة النبض والتوهج للشعار
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -138,7 +127,6 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // حركة وميض زر ابدأ الآن
     _buttonPulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -166,7 +154,6 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // الشعار مع التوهج والنبض
             AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) {
@@ -189,16 +176,11 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
                           ],
                         ),
                       ),
-                      Image.network(
-                        kLogoUrl,
+                      Image.asset(
+                        kLogoAsset,
                         width: 220,
                         height: 220,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.electric_bolt_rounded,
-                          size: 110,
-                          color: Color(0xFFF25C05),
-                        ),
                       ),
                     ],
                   ),
@@ -206,8 +188,6 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
               },
             ),
             const SizedBox(height: 24),
-
-            // النص الملون "معنا طلبك أسرع"
             RichText(
               text: const TextSpan(
                 style: TextStyle(fontFamily: 'Cairo', fontSize: 24, fontWeight: FontWeight.w900),
@@ -218,8 +198,6 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
               ),
             ),
             const SizedBox(height: 70),
-
-            // زر ابدأ الآن مع وميض الهالة
             AnimatedBuilder(
               animation: _buttonGlowAnimation,
               builder: (context, child) {
@@ -267,9 +245,6 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
   }
 }
 
-// ==========================================
-// بطاقة تسجيل الدخول المطابقة للويب
-// ==========================================
 class AuthCard extends StatefulWidget {
   const AuthCard({super.key});
 
@@ -354,7 +329,6 @@ class _AuthCardState extends State<AuthCard> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // الشعار العلوي المتوهج
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -372,16 +346,11 @@ class _AuthCardState extends State<AuthCard> {
                       ],
                     ),
                   ),
-                  Image.network(
-                    kLogoUrl,
+                  Image.asset(
+                    kLogoAsset,
                     width: 110,
                     height: 110,
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.electric_bolt_rounded,
-                      size: 60,
-                      color: Color(0xFFF25C05),
-                    ),
                   ),
                 ],
               ),
@@ -405,8 +374,6 @@ class _AuthCardState extends State<AuthCard> {
                 ),
               ),
               const SizedBox(height: 22),
-
-              // شريط التبديل بين تسجيل الدخول وحساب جديد
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
@@ -482,8 +449,6 @@ class _AuthCardState extends State<AuthCard> {
                 ),
               ),
               const SizedBox(height: 18),
-
-              // حقول الإدخال
               if (!_isLogin) ...[
                 _buildInputField(
                   controller: _nameController,
@@ -492,7 +457,6 @@ class _AuthCardState extends State<AuthCard> {
                 ),
                 const SizedBox(height: 12),
               ],
-
               _buildInputField(
                 controller: _emailController,
                 hintText: 'البريد الإلكتروني',
@@ -500,14 +464,12 @@ class _AuthCardState extends State<AuthCard> {
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 12),
-
               _buildInputField(
                 controller: _passwordController,
                 hintText: 'كلمة المرور',
                 icon: Icons.lock_rounded,
                 obscureText: true,
               ),
-
               if (_errorMessage != null) ...[
                 const SizedBox(height: 10),
                 Text(
@@ -515,10 +477,7 @@ class _AuthCardState extends State<AuthCard> {
                   style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12.5, fontWeight: FontWeight.w700),
                 ),
               ],
-
               const SizedBox(height: 18),
-
-              // زر الدخول الرئيسي البرتقالي
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -543,10 +502,7 @@ class _AuthCardState extends State<AuthCard> {
                         ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // فاصل أو
               Row(
                 children: [
                   Expanded(child: Container(height: 1, color: Colors.white.withOpacity(0.1))),
@@ -557,10 +513,7 @@ class _AuthCardState extends State<AuthCard> {
                   Expanded(child: Container(height: 1, color: Colors.white.withOpacity(0.1))),
                 ],
               ),
-
               const SizedBox(height: 16),
-
-              // زر تصفح التطبيق كزائر
               InkWell(
                 onTap: () {},
                 borderRadius: BorderRadius.circular(16),
