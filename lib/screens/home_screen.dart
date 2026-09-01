@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase/supabase.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -42,13 +43,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchCategories() async {
     try {
-      final res = await widget.supabase
+      final dynamic res = await widget.supabase
           .from('categories')
           .select()
           .order('sort_order', ascending: true);
+
       if (mounted) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(res);
+          _categories = List<Map<String, dynamic>>.from(res as List);
           _isLoadingCategories = false;
         });
       }
@@ -59,10 +61,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchStores() async {
     try {
-      final res = await widget.supabase.from('stores').select();
+      final dynamic res = await widget.supabase.from('stores').select();
       if (mounted) {
         setState(() {
-          _stores = List<Map<String, dynamic>>.from(res);
+          _stores = List<Map<String, dynamic>>.from(res as List);
           _filteredStores = _stores;
           _isLoadingStores = false;
         });
@@ -80,7 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         _filteredStores = _stores.where((s) {
           final name = (s['name'] ?? s['store_name'] ?? '').toString().toLowerCase();
-          return name.contains(clean);
+          final cat = (s['category'] ?? '').toString().toLowerCase();
+          return name.contains(clean) || cat.contains(clean);
         }).toList();
       }
     });
@@ -88,40 +91,48 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Theme(
+        data: ThemeData(
+          textTheme: GoogleFonts.tajawalTextTheme(),
+        ),
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF8F9FA),
+          body: SafeArea(
+            child: Stack(
               children: [
-                _buildHeader(),
-                _buildSearchSection(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 95),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildBannersSlider(),
-                        _buildSectionHeader('أقسام Speed Go', showViewAll: true, onViewAll: () {}),
-                        _buildCategoriesGrid(),
-                        _buildSectionHeader('المتاجر المتاحة بالقرب منك'),
-                        _buildStoresList(),
-                      ],
+                Column(
+                  children: [
+                    _buildHeader(),
+                    _buildSearchSection(),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 95),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildBannersSlider(),
+                            _buildSectionHeader('أقسام Speed Go', showViewAll: true, onViewAll: () {}),
+                            _buildCategoriesGrid(),
+                            _buildSectionHeader('المتاجر المتاحة بالقرب منك'),
+                            _buildStoresList(),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildBottomNav(),
                 ),
               ],
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildBottomNav(),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -130,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -144,13 +155,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF2EB),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.location_on, color: Color(0xFFF25C05), size: 20),
+                  child: const Icon(Icons.location_on, color: Color(0xFFF25C05), size: 22),
                 ),
                 const SizedBox(width: 10),
                 Column(
@@ -159,8 +170,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text('التوصيل إلى', style: TextStyle(fontSize: 12, color: Color(0xFF757575), fontWeight: FontWeight.w500)),
                     Row(
                       children: [
-                        Text('عدن - خورمكسر', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
-                        SizedBox(width: 3),
+                        Text('عدن - خورمكسر', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+                        SizedBox(width: 4),
                         Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF1A1A1A)),
                       ],
                     ),
@@ -175,22 +186,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SnackBar(content: Text('لا توجد إشعارات جديدة حالياً، طلباتك كلها تمام!')),
               );
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Container(
-              width: 40,
-              height: 40,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFEFEFEF)),
               ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.notifications_none_rounded, color: Color(0xFF1A1A1A), size: 22),
+                  const Icon(Icons.notifications_rounded, color: Color(0xFF1A1A1A), size: 22),
                   Positioned(
                     top: 10,
-                    right: 11,
+                    left: 10,
                     child: Container(
                       width: 8,
                       height: 8,
@@ -212,8 +223,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSearchSection() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       child: Container(
+        height: 48,
         decoration: BoxDecoration(
           color: const Color(0xFFF6F6F6),
           borderRadius: BorderRadius.circular(14),
@@ -228,7 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
             hintStyle: TextStyle(fontSize: 13, color: Color(0xFF757575)),
             prefixIcon: Icon(Icons.search, color: Color(0xFF757575), size: 20),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           ),
         ),
       ),
@@ -254,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return SizedBox(
-      height: 155,
+      height: 145,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         scrollDirection: Axis.horizontal,
@@ -264,26 +276,19 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (context, index) {
           final b = banners[index];
           return Container(
-            width: MediaQuery.of(context).size.width * 0.82,
+            width: MediaQuery.of(context).size.width * 0.84,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: b['colors'] as List<Color>,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.centerRight,
+                end: Alignment.centerLeft,
               ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: (b['colors'] as List<Color>)[1].withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(22),
             ),
             child: Stack(
               children: [
                 Positioned(
-                  left: -15,
+                  right: -10,
                   bottom: -20,
                   child: Icon(
                     b['icon'] as IconData,
@@ -299,23 +304,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         b['title'] as String,
-                        style: const TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w900),
+                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         b['subtitle'] as String,
-                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: Colors.white.withOpacity(0.92), fontSize: 12.5, fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           b['btn'] as String,
-                          style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 11, fontWeight: FontWeight.w800),
+                          style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 11.5, fontWeight: FontWeight.w800),
                         ),
                       ),
                     ],
@@ -331,15 +336,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSectionHeader(String title, {bool showViewAll = false, VoidCallback? onViewAll}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+          Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
           if (showViewAll)
             GestureDetector(
               onTap: onViewAll,
-              child: const Text('عرض الكل', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFFF25C05))),
+              child: const Text('عرض الكل', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF25C05))),
             ),
         ],
       ),
@@ -351,21 +356,25 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Color(0xFFF25C05))));
     }
 
+    if (_categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 14,
         mainAxisExtent: 145,
       ),
       itemCount: _categories.length,
       itemBuilder: (context, index) {
         final cat = _categories[index];
         final name = (cat['name'] ?? '').toString().trim();
-        final img = cat['image_url'] ?? '';
+        final img = (cat['image_url'] ?? '').toString();
         final gradient = _categoryGradients[index % _categoryGradients.length];
 
         return CategoryItemCard(
@@ -534,7 +543,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (badge != null)
                 Positioned(
                   top: -5,
-                  right: -8,
+                  left: -8,
                   child: Container(
                     padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
@@ -568,7 +577,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// كارت القسم التفاعلي مع حركة الاهتزاز والزجاج
 class CategoryItemCard extends StatefulWidget {
   final String name;
   final String imageUrl;
@@ -636,7 +644,7 @@ class _CategoryItemCardState extends State<CategoryItemCard> with SingleTickerPr
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.08),
@@ -648,48 +656,43 @@ class _CategoryItemCardState extends State<CategoryItemCard> with SingleTickerPr
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          widget.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox(),
+                    if (widget.imageUrl.isNotEmpty)
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: Image.network(
+                            widget.imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox(),
+                          ),
                         ),
                       ),
-                    ),
                     Positioned(
                       bottom: 8,
-                      left: 6,
-                      right: 6,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.92),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.12),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
+                      left: 10,
+                      right: 10,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFDFDFD),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
-                            child: Text(
-                              widget.name,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF1A1A1A),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                          ],
+                        ),
+                        child: Text(
+                          widget.name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF1A1A1A),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ),
