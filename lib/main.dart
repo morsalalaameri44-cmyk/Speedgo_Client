@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase/supabase.dart';
+import 'package:speedgo_client/screens/home_screen.dart';
 
 const String kLogoAsset = 'logo.png';
 const String kBgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1080&q=80';
@@ -49,6 +50,28 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
   bool _showSplash = true;
 
   @override
+  void initState() {
+    super.initState();
+    _checkExistingSession();
+  }
+
+  void _checkExistingSession() {
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToHome();
+      });
+    }
+  }
+
+  void _navigateToHome() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => HomeScreen(supabase: supabase)),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF080C14),
@@ -78,7 +101,7 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: const AuthCard(),
+              child: AuthCard(onSuccess: _navigateToHome),
             ),
           ),
           if (_showSplash)
@@ -246,7 +269,8 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
 }
 
 class AuthCard extends StatefulWidget {
-  const AuthCard({super.key});
+  final VoidCallback onSuccess;
+  const AuthCard({super.key, required this.onSuccess});
 
   @override
   State<AuthCard> createState() => _AuthCardState();
@@ -291,6 +315,7 @@ class _AuthCardState extends State<AuthCard> {
           data: {'full_name': name},
         );
       }
+      widget.onSuccess();
     } catch (e) {
       setState(() {
         _errorMessage = 'حدث خطأ: تأكد من صحة البيانات المدخلة.';
@@ -515,7 +540,7 @@ class _AuthCardState extends State<AuthCard> {
               ),
               const SizedBox(height: 16),
               InkWell(
-                onTap: () {},
+                onTap: widget.onSuccess,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
