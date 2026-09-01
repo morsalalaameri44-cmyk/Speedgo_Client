@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase/supabase.dart';
 
-// تعريف عميل Supabase العام
+// رابط الشعار المفرغ الرسمي
+const String kLogoUrl = 'https://i.imgur.com/vHqQZrM.png';
+// رابط خلفية الطعام الخشبية الداكنة
+const String kBgUrl = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1080&q=80';
+
 late final SupabaseClient supabase;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // تهيئة Supabase مباشرة
   supabase = SupabaseClient(
     'https://ldefaxirgruqulxhkaqh.supabase.co',
     'sb_publishable_Gsn2xn5DjAJehY0SGFubzw_KxV-hG-4',
@@ -29,7 +32,7 @@ class SpeedGoApp extends StatelessWidget {
       locale: const Locale('ar', 'AE'),
       theme: ThemeData(
         brightness: Brightness.dark,
-        textTheme: GoogleFonts.tajawalTextTheme(ThemeData.dark().textTheme),
+        textTheme: GoogleFonts.cairoTextTheme(ThemeData.dark().textTheme),
         scaffoldBackgroundColor: const Color(0xFF0F172A),
       ),
       home: const MainAuthWrapper(),
@@ -48,43 +51,25 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
   bool _showSplash = true;
 
   @override
-  void initState() {
-    super.initState();
-    _checkExistingSession();
-  }
-
-  void _checkExistingSession() {
-    final session = supabase.auth.currentSession;
-    if (session != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToHome();
-      });
-    }
-  }
-
-  void _navigateToHome() {
-    // سيتم التوجيه لصفحة home.dart فور إنشائها
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF080C14),
       body: Stack(
         children: [
-          // 1. خلفية واجهة تسجيل الدخول مع طبقة التعتيم
+          // 1. خلفية الطعام الخشبية مع التدرج اللوني والتعتيم المطابق للويب
           Positioned.fill(
             child: Image.network(
-              'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1080&q=80',
+              kBgUrl,
               fit: BoxFit.cover,
             ),
           ),
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color.fromRGBO(15, 23, 42, 0.7),
-                    Color.fromRGBO(15, 23, 42, 0.95),
+                    const Color(0xFF0F172A).withOpacity(0.82),
+                    const Color(0xFF080C14).withOpacity(0.96),
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
@@ -93,19 +78,20 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
             ),
           ),
 
-          // 2. واجهة تسجيل الدخول (بطاقة الزجاج Frosted Glass)
+          // 2. بطاقة تسجيل الدخول الزجاجية
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               child: const AuthCard(),
             ),
           ),
 
-          // 3. شاشة البداية الافتتاحية (Splash Screen) مع حركة التلاشي
+          // 3. شاشة البداية الافتتاحية مع الوميض والتوهج
           if (_showSplash)
             AnimatedOpacity(
               opacity: _showSplash ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 600),
+              duration: const Duration(milliseconds: 500),
               child: SplashScreenOverlay(
                 onStartPressed: () {
                   setState(() {
@@ -121,7 +107,7 @@ class _MainAuthWrapperState extends State<MainAuthWrapper> {
 }
 
 // ==========================================
-// شاشة البداية (Splash Screen Overlay)
+// شاشة البداية (Splash Screen مع الشعار والوميض)
 // ==========================================
 class SplashScreenOverlay extends StatefulWidget {
   final VoidCallback onStartPressed;
@@ -132,35 +118,41 @@ class SplashScreenOverlay extends StatefulWidget {
 }
 
 class _SplashScreenOverlayState extends State<SplashScreenOverlay>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _sloganFadeAnimation;
+    with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  late AnimationController _buttonPulseController;
+  late Animation<double> _buttonGlowAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+
+    // حركة النبض والتوهج للشعار
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _scaleAnimation = CurvedAnimation(
-      parent: _animController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
-    );
+    // حركة وميض زر ابدأ الآن
+    _buttonPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
 
-    _sloganFadeAnimation = CurvedAnimation(
-      parent: _animController,
-      curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
+    _buttonGlowAnimation = Tween<double>(begin: 8.0, end: 25.0).animate(
+      CurvedAnimation(parent: _buttonPulseController, curve: Curves.easeInOut),
     );
-
-    _animController.forward();
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _pulseController.dispose();
+    _buttonPulseController.dispose();
     super.dispose();
   }
 
@@ -169,99 +161,104 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF050505), Color(0xFF151515), Color(0xFF000000)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: const Color(0xFF090A0F),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 210,
-                    height: 210,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFF25C05).withOpacity(0.35),
-                          blurRadius: 60,
-                          spreadRadius: 20,
+            // الشعار مع التوهج والنبض
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF25C05).withOpacity(0.35 * _pulseAnimation.value),
+                              blurRadius: 70,
+                              spreadRadius: 25,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Image.network(
+                        kLogoUrl,
+                        width: 220,
+                        height: 220,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.electric_bolt_rounded,
+                          size: 110,
+                          color: Color(0xFFF25C05),
+                        ),
+                      ),
+                    ],
                   ),
-                  const Icon(
-                    Icons.electric_bolt_rounded,
-                    size: 110,
-                    color: Color(0xFFF25C05),
-                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // النص الملون "معنا طلبك أسرع"
+            RichText(
+              text: const TextSpan(
+                style: TextStyle(fontFamily: 'Cairo', fontSize: 24, fontWeight: FontWeight.w900),
+                children: [
+                  TextSpan(text: 'معنا ', style: TextStyle(color: Color(0xFFF25C05))),
+                  TextSpan(text: 'طلبك أسرع', style: TextStyle(color: Colors.white)),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            FadeTransition(
-              opacity: _sloganFadeAnimation,
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Colors.white, Color(0xFFF25C05)],
-                ).createShader(bounds),
-                child: const Text(
-                  'معنا طلبك أسرع',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 80),
-            FadeTransition(
-              opacity: _sloganFadeAnimation,
-              child: InkWell(
-                onTap: widget.onStartPressed,
-                borderRadius: BorderRadius.circular(30),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 45, vertical: 16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF6B35), Color(0xFFF25C05)],
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF25C05).withOpacity(0.4),
-                        blurRadius: 25,
-                        offset: const Offset(0, 10),
+            const SizedBox(height: 70),
+
+            // زر ابدأ الآن مع وميض الهالة
+            AnimatedBuilder(
+              animation: _buttonGlowAnimation,
+              builder: (context, child) {
+                return InkWell(
+                  onTap: widget.onStartPressed,
+                  borderRadius: BorderRadius.circular(40),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 42, vertical: 15),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B35), Color(0xFFF25C05)],
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text(
-                        'ابدأ الآن',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                      borderRadius: BorderRadius.circular(40),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFF25C05).withOpacity(0.55),
+                          blurRadius: _buttonGlowAnimation.value,
+                          spreadRadius: 2,
                         ),
-                      ),
-                      SizedBox(width: 12),
-                      Icon(Icons.arrow_back, color: Colors.white, size: 20),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Text(
+                          'ابدأ الآن',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -271,7 +268,7 @@ class _SplashScreenOverlayState extends State<SplashScreenOverlay>
 }
 
 // ==========================================
-// بطاقة تسجيل الدخول والتسجيل (Auth Card)
+// بطاقة تسجيل الدخول المطابقة للويب
 // ==========================================
 class AuthCard extends StatefulWidget {
   const AuthCard({super.key});
@@ -319,10 +316,9 @@ class _AuthCardState extends State<AuthCard> {
           data: {'full_name': name},
         );
       }
-      // التوجيه لصفحة home عند اكتمال الربط
     } catch (e) {
       setState(() {
-        _errorMessage = 'حدث خطأ: تأكد من صحة البيانات.';
+        _errorMessage = 'حدث خطأ: تأكد من صحة البيانات المدخلة.';
       });
     } finally {
       if (mounted) {
@@ -336,49 +332,60 @@ class _AuthCardState extends State<AuthCard> {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(35),
+      borderRadius: BorderRadius.circular(32),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          constraints: const BoxConstraints(maxWidth: 390),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(35),
-            border: Border.all(color: Colors.white.withOpacity(0.12)),
+            color: const Color(0xFF1E293B).withOpacity(0.55),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 50,
-                offset: const Offset(0, 25),
+                color: Colors.black.withOpacity(0.6),
+                blurRadius: 40,
+                offset: const Offset(0, 15),
               ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // الشعار
+              // الشعار العلوي المتوهج
               Stack(
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 90,
-                    height: 90,
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFF25C05).withOpacity(0.3),
-                          blurRadius: 30,
+                          color: const Color(0xFFF25C05).withOpacity(0.28),
+                          blurRadius: 35,
+                          spreadRadius: 10,
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.electric_bolt_rounded, size: 55, color: Color(0xFFF25C05)),
+                  Image.network(
+                    kLogoUrl,
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.electric_bolt_rounded,
+                      size: 60,
+                      color: Color(0xFFF25C05),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
               const Text(
                 'Speed Go',
                 style: TextStyle(
@@ -388,30 +395,44 @@ class _AuthCardState extends State<AuthCard> {
                   letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               const Text(
                 'معنا طلبك أسرع',
-                style: TextStyle(fontSize: 14, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF94A3B8),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 22),
 
-              // أزرار التبديل (Tabs)
+              // شريط التبديل بين تسجيل الدخول وحساب جديد
               Container(
-                padding: const EdgeInsets.all(5),
+                padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.35),
+                  color: const Color(0xFF0F172A).withOpacity(0.7),
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.06)),
                 ),
                 child: Row(
                   children: [
                     Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _isLogin = true),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                           decoration: BoxDecoration(
                             color: _isLogin ? Colors.white : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
+                            boxShadow: _isLogin
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 8,
+                                    )
+                                  ]
+                                : [],
                           ),
                           child: Center(
                             child: Text(
@@ -419,7 +440,7 @@ class _AuthCardState extends State<AuthCard> {
                               style: TextStyle(
                                 color: _isLogin ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
                                 fontWeight: FontWeight.w800,
-                                fontSize: 13,
+                                fontSize: 13.5,
                               ),
                             ),
                           ),
@@ -429,11 +450,20 @@ class _AuthCardState extends State<AuthCard> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _isLogin = false),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
                           decoration: BoxDecoration(
                             color: !_isLogin ? Colors.white : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
+                            boxShadow: !_isLogin
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      blurRadius: 8,
+                                    )
+                                  ]
+                                : [],
                           ),
                           child: Center(
                             child: Text(
@@ -441,7 +471,7 @@ class _AuthCardState extends State<AuthCard> {
                               style: TextStyle(
                                 color: !_isLogin ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
                                 fontWeight: FontWeight.w800,
-                                fontSize: 13,
+                                fontSize: 13.5,
                               ),
                             ),
                           ),
@@ -451,30 +481,30 @@ class _AuthCardState extends State<AuthCard> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
               // حقول الإدخال
               if (!_isLogin) ...[
                 _buildInputField(
                   controller: _nameController,
                   hintText: 'اسمك الكريم',
-                  icon: Icons.person_outline_rounded,
+                  icon: Icons.person_rounded,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
               ],
 
               _buildInputField(
                 controller: _emailController,
                 hintText: 'البريد الإلكتروني',
-                icon: Icons.email_outlined,
+                icon: Icons.mail_rounded,
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
 
               _buildInputField(
                 controller: _passwordController,
                 hintText: 'كلمة المرور',
-                icon: Icons.lock_outline_rounded,
+                icon: Icons.lock_rounded,
                 obscureText: true,
               ),
 
@@ -482,13 +512,13 @@ class _AuthCardState extends State<AuthCard> {
                 const SizedBox(height: 10),
                 Text(
                   _errorMessage!,
-                  style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12.5, fontWeight: FontWeight.w700),
                 ),
               ],
 
               const SizedBox(height: 18),
 
-              // زر الدخول / التسجيل الرئيسي
+              // زر الدخول الرئيسي البرتقالي
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -496,10 +526,10 @@ class _AuthCardState extends State<AuthCard> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF25C05),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 10,
-                    shadowColor: const Color(0xFFF25C05).withOpacity(0.5),
+                    elevation: 8,
+                    shadowColor: const Color(0xFFF25C05).withOpacity(0.55),
                   ),
                   child: _isLoading
                       ? const SizedBox(
@@ -514,45 +544,43 @@ class _AuthCardState extends State<AuthCard> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // الخط الفاصل
+              // فاصل أو
               Row(
                 children: [
                   Expanded(child: Container(height: 1, color: Colors.white.withOpacity(0.1))),
                   const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('أو', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13, fontWeight: FontWeight.bold)),
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: Text('أو', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5, fontWeight: FontWeight.w600)),
                   ),
                   Expanded(child: Container(height: 1, color: Colors.white.withOpacity(0.1))),
                 ],
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
-              // زر الدخول كزائر
+              // زر تصفح التطبيق كزائر
               InkWell(
-                onTap: () {
-                  // الانتقال المباشر لصفحة home كزائر
-                },
+                onTap: () {},
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 13),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
+                    color: const Color(0xFF0F172A).withOpacity(0.6),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    border: Border.all(color: Colors.white.withOpacity(0.12)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
+                      Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
                       Text(
                         'تصفح التطبيق كزائر',
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w800),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_back, color: Colors.white, size: 16),
                     ],
                   ),
                 ),
@@ -573,7 +601,7 @@ class _AuthCardState extends State<AuthCard> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.07),
+        color: const Color(0xFF0F172A).withOpacity(0.65),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
@@ -581,13 +609,13 @@ class _AuthCardState extends State<AuthCard> {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: const TextStyle(color: Colors.white, fontSize: 13.5),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-          prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
+          hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+          prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 19),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
       ),
     );
