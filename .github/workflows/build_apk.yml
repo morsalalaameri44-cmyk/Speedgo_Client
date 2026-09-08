@@ -25,10 +25,11 @@ jobs:
           flutter-version: '3.24.x'
           channel: 'stable'
 
-      - name: Generate Clean Android Project
+      - name: Generate Clean Android Project & Add Permissions
         run: |
           rm -rf android/
           flutter create --project-name speedgo_client --platforms=android --org com.speedgo .
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
 
       - name: Install Dependencies
         run: flutter pub get
