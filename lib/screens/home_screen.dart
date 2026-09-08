@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _filteredStores = [];
   bool _isLoadingCategories = true;
   bool _isLoadingStores = true;
+  String? _errorMessage;
   final TextEditingController _searchController = TextEditingController();
 
   final List<List<Color>> _categoryGradients = [
@@ -37,40 +38,62 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchCategories();
-    _fetchStores();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    await Future.wait([
+      _fetchCategories(),
+      _fetchStores(),
+    ]);
   }
 
   Future<void> _fetchCategories() async {
     try {
-      final dynamic res = await widget.supabase
+      final res = await widget.supabase
           .from('categories')
           .select()
           .order('sort_order', ascending: true);
 
       if (mounted) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(res as List);
+          _categories = (res as List)
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList();
           _isLoadingCategories = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingCategories = false);
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoadingCategories = false;
+        });
+      }
     }
   }
 
   Future<void> _fetchStores() async {
     try {
-      final dynamic res = await widget.supabase.from('stores').select();
+      final res = await widget.supabase.from('stores').select();
+
       if (mounted) {
+        final list = (res as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
         setState(() {
-          _stores = List<Map<String, dynamic>>.from(res as List);
-          _filteredStores = _stores;
+          _stores = list;
+          _filteredStores = list;
           _isLoadingStores = false;
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingStores = false);
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoadingStores = false;
+        });
+      }
     }
   }
 
@@ -107,18 +130,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildHeader(),
                     _buildSearchSection(),
                     Expanded(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 95),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildBannersSlider(),
-                            _buildSectionHeader('أقسام Speed Go', showViewAll: true, onViewAll: () {}),
-                            _buildCategoriesGrid(),
-                            _buildSectionHeader('المتاجر المتاحة بالقرب منك'),
-                            _buildStoresList(),
-                          ],
+                      child: RefreshIndicator(
+                        onRefresh: _fetchData,
+                        color: const Color(0xFFF25C05),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          padding: const EdgeInsets.only(bottom: 95),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildBannersSlider(),
+                              _buildSectionHeader('أقسام Speed Go', showViewAll: true, onViewAll: () {}),
+                              _buildCategoriesGrid(),
+                              _buildSectionHeader('المتاجر المتاحة بالقرب منك'),
+                              _buildStoresList(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -353,11 +382,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildCategoriesGrid() {
     if (_isLoadingCategories) {
-      return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: Color(0xFFF25C05))));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Color(0xFFF25C05)),
+        ),
+      );
     }
 
     if (_categories.isEmpty) {
-      return const SizedBox.shrink();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            _errorMessage ?? 'لا توجد أقسام متوفرة',
+            style: const TextStyle(color: Color(0xFF757575), fontSize: 13),
+          ),
+        ),
+      );
     }
 
     return GridView.builder(
