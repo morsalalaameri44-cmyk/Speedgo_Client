@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingCategories = true;
   bool _isLoadingStores = true;
   String? _errorMessage;
+  String _activeCategoryFilter = 'الكل';
   final TextEditingController _searchController = TextEditingController();
 
   final List<List<Color>> _categoryGradients = [
@@ -84,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
         setState(() {
           _stores = list;
-          _filteredStores = list;
+          _applyFilters();
           _isLoadingStores = false;
         });
       }
@@ -98,18 +99,28 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _onSearch(String query) {
-    final clean = query.trim().toLowerCase();
+  void _applyFilters() {
+    final cleanSearch = _searchController.text.trim().toLowerCase();
     setState(() {
-      if (clean.isEmpty) {
-        _filteredStores = _stores;
-      } else {
-        _filteredStores = _stores.where((s) {
-          final name = (s['name'] ?? s['store_name'] ?? '').toString().toLowerCase();
-          final cat = (s['category'] ?? '').toString().toLowerCase();
-          return name.contains(clean) || cat.contains(clean);
-        }).toList();
-      }
+      _filteredStores = _stores.where((s) {
+        final name = (s['name'] ?? s['store_name'] ?? '').toString().toLowerCase();
+        final cat = (s['category'] ?? '').toString().toLowerCase();
+
+        final matchesCategory = _activeCategoryFilter == 'الكل' ||
+            cat.contains(_activeCategoryFilter.toLowerCase());
+        final matchesSearch = cleanSearch.isEmpty ||
+            name.contains(cleanSearch) ||
+            cat.contains(cleanSearch);
+
+        return matchesCategory && matchesSearch;
+      }).toList();
+    });
+  }
+
+  void _onSelectCategory(String catName) {
+    setState(() {
+      _activeCategoryFilter = (_activeCategoryFilter == catName) ? 'الكل' : catName;
+      _applyFilters();
     });
   }
 
@@ -143,9 +154,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildBannersSlider(),
-                              _buildSectionHeader('أقسام Speed Go', showViewAll: true, onViewAll: () {}),
+                              _buildSectionHeader(
+                                'أقسام Speed Go',
+                                showViewAll: true,
+                                onViewAll: () => _onSelectCategory('الكل'),
+                              ),
                               _buildCategoriesGrid(),
-                              _buildSectionHeader('المتاجر المتاحة بالقرب منك'),
+                              _buildSectionHeader(
+                                _activeCategoryFilter == 'الكل'
+                                    ? 'المتاجر المتاحة بالقرب منك'
+                                    : 'متاجر قسم ($_activeCategoryFilter)',
+                              ),
                               _buildStoresList(),
                             ],
                           ),
@@ -171,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -181,28 +200,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SnackBar(content: Text('ستفتح خريطة تحديد موقع التوصيل في التحديث القادم!')),
               );
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: Row(
               children: [
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF2EB),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.location_on, color: Color(0xFFF25C05), size: 22),
+                  child: const Icon(Icons.location_on, color: Color(0xFFF25C05), size: 24),
                 ),
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
-                    Text('التوصيل إلى', style: TextStyle(fontSize: 12, color: Color(0xFF757575), fontWeight: FontWeight.w500)),
+                    Text('التوصيل إلى', style: TextStyle(fontSize: 13, color: Color(0xFF757575), fontWeight: FontWeight.w600)),
                     Row(
                       children: [
-                        Text('عدن - خورمكسر', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A))),
+                        Text('عدن - خورمكسر', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
                         SizedBox(width: 4),
-                        Icon(Icons.keyboard_arrow_down, size: 16, color: Color(0xFF1A1A1A)),
+                        Icon(Icons.keyboard_arrow_down, size: 18, color: Color(0xFF1A1A1A)),
                       ],
                     ),
                   ],
@@ -218,8 +237,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             borderRadius: BorderRadius.circular(14),
             child: Container(
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
@@ -228,10 +247,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Icon(Icons.notifications_rounded, color: Color(0xFF1A1A1A), size: 22),
+                  const Icon(Icons.notifications_rounded, color: Color(0xFF1A1A1A), size: 24),
                   Positioned(
-                    top: 10,
-                    left: 10,
+                    top: 11,
+                    left: 11,
                     child: Container(
                       width: 8,
                       height: 8,
@@ -255,22 +274,22 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       child: Container(
-        height: 48,
+        height: 50,
         decoration: BoxDecoration(
           color: const Color(0xFFF6F6F6),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFF0F0F0)),
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: _onSearch,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
+          onChanged: (_) => _applyFilters(),
+          style: const TextStyle(fontSize: 15, color: Color(0xFF1A1A1A), fontWeight: FontWeight.w600),
           decoration: const InputDecoration(
             hintText: 'ابحث عن مطعم، سوبرماركت، صيدلية...',
-            hintStyle: TextStyle(fontSize: 13, color: Color(0xFF757575)),
-            prefixIcon: Icon(Icons.search, color: Color(0xFF757575), size: 20),
+            hintStyle: TextStyle(fontSize: 14, color: Color(0xFF757575), fontWeight: FontWeight.w500),
+            prefixIcon: Icon(Icons.search, color: Color(0xFF757575), size: 22),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           ),
         ),
       ),
@@ -285,6 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'btn': 'اطلب الآن',
         'colors': [const Color(0xFFFF6B35), const Color(0xFFF25C05)],
         'icon': Icons.bolt_rounded,
+        'cat': 'سوبر ماركت',
       },
       {
         'title': 'صحتك تهمنا',
@@ -292,11 +312,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'btn': 'تصفح الصيدليات',
         'colors': [const Color(0xFF00B4D8), const Color(0xFF0077B6)],
         'icon': Icons.medical_services_rounded,
+        'cat': 'صيدليات',
       },
     ];
 
     return SizedBox(
-      height: 145,
+      height: 150,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         scrollDirection: Axis.horizontal,
@@ -305,58 +326,62 @@ class _HomeScreenState extends State<HomeScreen> {
         separatorBuilder: (_, __) => const SizedBox(width: 14),
         itemBuilder: (context, index) {
           final b = banners[index];
-          return Container(
-            width: MediaQuery.of(context).size.width * 0.84,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: b['colors'] as List<Color>,
-                begin: Alignment.centerRight,
-                end: Alignment.centerLeft,
+          return InkWell(
+            onTap: () => _onSelectCategory(b['cat'] as String),
+            borderRadius: BorderRadius.circular(22),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.84,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: b['colors'] as List<Color>,
+                  begin: Alignment.centerRight,
+                  end: Alignment.centerLeft,
+                ),
+                borderRadius: BorderRadius.circular(22),
               ),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: -10,
-                  bottom: -20,
-                  child: Icon(
-                    b['icon'] as IconData,
-                    size: 130,
-                    color: Colors.white.withOpacity(0.15),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -10,
+                    bottom: -20,
+                    child: Icon(
+                      b['icon'] as IconData,
+                      size: 130,
+                      color: Colors.white.withOpacity(0.15),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        b['title'] as String,
-                        style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        b['subtitle'] as String,
-                        style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                  Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          b['title'] as String,
+                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
                         ),
-                        child: Text(
-                          b['btn'] as String,
-                          style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 11.5, fontWeight: FontWeight.w800),
+                        const SizedBox(height: 4),
+                        Text(
+                          b['subtitle'] as String,
+                          style: TextStyle(color: Colors.white.withOpacity(0.92), fontSize: 13, fontWeight: FontWeight.w600),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            b['btn'] as String,
+                            style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 12, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -370,11 +395,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
           if (showViewAll)
             GestureDetector(
               onTap: onViewAll,
-              child: const Text('عرض الكل', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFFF25C05))),
+              child: const Text('عرض الكل', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFFF25C05))),
             ),
         ],
       ),
@@ -397,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(16),
           child: Text(
             _errorMessage ?? 'لا توجد أقسام متوفرة',
-            style: const TextStyle(color: Color(0xFF757575), fontSize: 13),
+            style: const TextStyle(color: Color(0xFF757575), fontSize: 14, fontWeight: FontWeight.w700),
           ),
         ),
       );
@@ -411,7 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 14,
-        mainAxisExtent: 145,
+        mainAxisExtent: 148,
       ),
       itemCount: _categories.length,
       itemBuilder: (context, index) {
@@ -424,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
           name: name,
           imageUrl: img,
           gradient: gradient,
-          onTap: () {},
+          onTap: () => _onSelectCategory(name),
         );
       },
     );
@@ -439,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               CircularProgressIndicator(color: Color(0xFFF25C05)),
               SizedBox(height: 10),
-              Text('جاري جلب المتاجر...', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF757575))),
+              Text('جاري جلب المتاجر...', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF757575))),
             ],
           ),
         ),
@@ -447,14 +472,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (_filteredStores.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(40),
+          padding: const EdgeInsets.all(40),
           child: Column(
             children: [
-              Icon(Icons.store_mall_directory_outlined, size: 45, color: Color(0xFFBDBDBD)),
-              SizedBox(height: 8),
-              Text('لا توجد متاجر مطابقة حالياً!', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF757575))),
+              const Icon(Icons.store_mall_directory_outlined, size: 50, color: Color(0xFFBDBDBD)),
+              const SizedBox(height: 10),
+              Text(
+                _activeCategoryFilter == 'الكل'
+                    ? 'لا توجد متاجر مطابقة حالياً!'
+                    : 'لا توجد متاجر في قسم ($_activeCategoryFilter) حالياً',
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF757575)),
+              ),
             ],
           ),
         ),
@@ -490,7 +520,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
@@ -508,13 +538,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    width: 85,
-                    height: 85,
+                    width: 90,
+                    height: 90,
                     color: const Color(0xFFF5F5F5),
                     child: Image.network(
                       img,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.store, color: Color(0xFFBDBDBD), size: 35),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.store, color: Color(0xFFBDBDBD), size: 38),
                     ),
                   ),
                 ),
@@ -525,27 +555,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Text(
                         name,
-                        style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A)),
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A)),
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 4),
                       Text(
                         cat,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF757575), fontWeight: FontWeight.w500),
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF757575), fontWeight: FontWeight.w600),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Row(
                         children: const [
-                          Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFB300)),
-                          SizedBox(width: 2),
-                          Text('4.5', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
-                          SizedBox(width: 10),
-                          Icon(Icons.access_time_filled_rounded, size: 14, color: Color(0xFF5C677D)),
-                          SizedBox(width: 2),
-                          Text('30 دقيقة', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
-                          SizedBox(width: 10),
-                          Icon(Icons.delivery_dining_rounded, size: 16, color: Color(0xFF2A9D8F)),
-                          SizedBox(width: 2),
-                          Text('سريع', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A))),
+                          Icon(Icons.star_rounded, size: 18, color: Color(0xFFFFB300)),
+                          SizedBox(width: 3),
+                          Text('4.5', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+                          SizedBox(width: 12),
+                          Icon(Icons.access_time_filled_rounded, size: 16, color: Color(0xFF5C677D)),
+                          SizedBox(width: 3),
+                          Text('30 دقيقة', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+                          SizedBox(width: 12),
+                          Icon(Icons.delivery_dining_rounded, size: 18, color: Color(0xFF2A9D8F)),
+                          SizedBox(width: 3),
+                          Text('سريع', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
                         ],
                       ),
                     ],
@@ -561,7 +591,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNav() {
     return Container(
-      height: 72,
+      height: 74,
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(top: BorderSide(color: Color(0xFFEFEFEF))),
@@ -597,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Icon(
                 icon,
-                size: 22,
+                size: 24,
                 color: isSelected ? const Color(0xFFF25C05) : const Color(0xFF757575),
               ),
               if (badge != null)
@@ -615,7 +645,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Center(
                       child: Text(
                         badge,
-                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                        style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900),
                       ),
                     ),
                   ),
@@ -626,8 +656,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
               color: isSelected ? const Color(0xFFF25C05) : const Color(0xFF757575),
             ),
           ),
@@ -729,10 +759,10 @@ class _CategoryItemCardState extends State<CategoryItemCard> with SingleTickerPr
                       ),
                     Positioned(
                       bottom: 8,
-                      left: 10,
-                      right: 10,
+                      left: 8,
+                      right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFDFDFD),
                           borderRadius: BorderRadius.circular(16),
@@ -751,7 +781,7 @@ class _CategoryItemCardState extends State<CategoryItemCard> with SingleTickerPr
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFF1A1A1A),
-                            fontSize: 12.5,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
