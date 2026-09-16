@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase/supabase.dart';
 
 class StoreScreen extends StatefulWidget {
@@ -41,29 +42,6 @@ class _StoreScreenState extends State<StoreScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  String _getDefaultCoverByCategory(String? category) {
-    final cat = (category ?? '').toLowerCase();
-    if (cat.contains('مطعم') || cat.contains('مطاعم')) {
-      return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80';
-    }
-    if (cat.contains('سوبر ماركت') || cat.contains('بقالة')) {
-      return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
-    }
-    if (cat.contains('صيدل') || cat.contains('أدوية')) {
-      return 'https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&w=600&q=80';
-    }
-    if (cat.contains('تحف') || cat.contains('هدايا')) {
-      return 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?auto=format&fit=crop&w=600&q=80';
-    }
-    if (cat.contains('مكتب')) {
-      return 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=600&q=80';
-    }
-    if (cat.contains('إلكترون') || cat.contains('جوال')) {
-      return 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=600&q=80';
-    }
-    return 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=600&q=80';
   }
 
   Future<void> _fetchStoreAndProducts() async {
@@ -111,9 +89,7 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   void _scrollToCategory(String category) {
-    setState(() {
-      _selectedCategory = category;
-    });
+    setState(() => _selectedCategory = category);
     final key = _categoryKeys[category];
     if (key?.currentContext != null) {
       Scrollable.ensureVisible(
@@ -134,81 +110,60 @@ class _StoreScreenState extends State<StoreScreen> {
 
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
-        setState(() {
-          _animatingProductIds.remove(productId);
-        });
+        setState(() => _animatingProductIds.remove(productId));
       }
     });
+  }
+
+  TextStyle _tajawal({required double size, required FontWeight weight, Color color = const Color(0xFF1A1A1A)}) {
+    return GoogleFonts.tajawal(fontSize: size, fontWeight: weight, color: color);
   }
 
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Theme(
-        data: ThemeData(textTheme: GoogleFonts.tajawalTextTheme()),
-        child: Scaffold(
-          backgroundColor: const Color(0xFFFDFDFD),
-          body: Stack(
-            children: [
-              if (_isLoading)
-                const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(color: Color(0xFFF25C05)),
-                      SizedBox(height: 16),
-                      Text(
-                        'جاري جلب الأصناف والتصنيفات...',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Color(0xFF1A1A1A)),
-                      ),
-                    ],
-                  ),
-                )
-              else if (_errorMessage != null || _store == null)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      _errorMessage ?? 'لم يتم العثور على المتجر المطلوب',
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
-                  ),
-                )
-              else
-                SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 120),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildCoverSection(),
-                      _buildStoreDetailsCard(),
-                      if (_groupedProducts.isNotEmpty) _buildCategoriesTabs(),
-                      _buildProductsList(),
-                    ],
-                  ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFDFDFD),
+        body: Stack(
+          children: [
+            if (_isLoading)
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(color: Color(0xFFF25C05)),
+                    const SizedBox(height: 16),
+                    Text('جاري جلب الأصناف والتصنيفات...', style: _tajawal(size: 16, weight: FontWeight.w800, color: const Color(0xFF1A1A1A))),
+                  ],
                 ),
-
-              // الهيدر الزجاجي
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: _buildGlassHeader(),
+              )
+            else if (_errorMessage != null || _store == null)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(_errorMessage ?? 'لم يتم العثور على المتجر المطلوب', style: _tajawal(size: 16, weight: FontWeight.w800, color: Colors.red)),
+                ),
+              )
+            else
+              SingleChildScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCoverSection(),
+                    _buildStoreDetailsCard(),
+                    if (_groupedProducts.isNotEmpty) _buildCategoriesTabs(),
+                    _buildProductsList(),
+                  ],
+                ),
               ),
 
-              // شريط السلة العائم
-              if (_cartCount > 0)
-                Positioned(
-                  bottom: 22,
-                  left: 20,
-                  right: 20,
-                  child: _buildFloatingCartBar(),
-                ),
-            ],
-          ),
+            Positioned(top: 0, left: 0, right: 0, child: _buildGlassHeader()),
+            if (_cartCount > 0) Positioned(bottom: 22, left: 20, right: 20, child: _buildFloatingCartBar()),
+          ],
         ),
       ),
     );
@@ -219,65 +174,28 @@ class _StoreScreenState extends State<StoreScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 8,
-            bottom: 14,
-            left: 20,
-            right: 20,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.88),
-            border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.3))),
-          ),
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, bottom: 14, left: 20, right: 20),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.88), border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.3)))),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              InkWell(
+              GestureDetector(
                 onTap: () => Navigator.pop(context),
-                borderRadius: BorderRadius.circular(14),
                 child: Container(
                   width: 42,
                   height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF1A1A1A), size: 22),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))]),
+                  child: const Icon(FontAwesomeIcons.arrowRight, color: Color(0xFF1A1A1A), size: 18),
                 ),
               ),
-              const Text(
-                'قائمة الأصناف',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A)),
-              ),
-              InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم نسخ رابط المتجر!')),
-                  );
-                },
-                borderRadius: BorderRadius.circular(14),
+              Text('قائمة الأصناف', style: _tajawal(size: 20, weight: FontWeight.w900)),
+              GestureDetector(
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم نسخ رابط المتجر!'))),
                 child: Container(
                   width: 42,
                   height: 42,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.share_outlined, color: Color(0xFF1A1A1A), size: 21),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))]),
+                  child: const Icon(FontAwesomeIcons.shareNodes, color: Color(0xFF1A1A1A), size: 18),
                 ),
               ),
             ],
@@ -288,31 +206,15 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   Widget _buildCoverSection() {
-    final cat = _store?['category']?.toString();
-    String cover = (_store?['cover_url'] ?? '').toString();
-    if (cover.trim().isEmpty) cover = (_store?['logo_url'] ?? '').toString();
-    if (cover.trim().isEmpty) cover = _getDefaultCoverByCategory(cat);
-
+    String cover = (_store?['cover_url'] ?? _store?['logo_url'] ?? 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600').toString();
     return SizedBox(
       height: 250,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.network(
-            cover,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(color: const Color(0xFFEFEFEF)),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black.withOpacity(0.7), Colors.transparent],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-          ),
+          Image.network(cover, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: const Color(0xFFEFEFEF))),
+          Container(decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.black.withOpacity(0.7), Colors.transparent], begin: Alignment.bottomCenter, end: Alignment.topCenter))),
         ],
       ),
     );
@@ -326,36 +228,23 @@ class _StoreScreenState extends State<StoreScreen> {
       transform: Matrix4.translationValues(0, -40, 0),
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.07), blurRadius: 24, offset: const Offset(0, 8))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+          Text(name, style: _tajawal(size: 24, weight: FontWeight.w900)),
           const SizedBox(height: 6),
-          Text(cat, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF757575))),
+          Text(cat, style: _tajawal(size: 15, weight: FontWeight.w600, color: const Color(0xFF757575))),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(16),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(16)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(Icons.star_rounded, '4.9'),
-                _buildStatItem(Icons.access_time_filled_rounded, '30 دقيقة'),
-                _buildStatItem(Icons.delivery_dining_rounded, 'توصيل سريع'),
+                _buildStatItem(FontAwesomeIcons.star, '4.9', const Color(0xFFFFB300)),
+                _buildStatItem(FontAwesomeIcons.clock, '30 دقيقة', const Color(0xFFF25C05)),
+                _buildStatItem(FontAwesomeIcons.truckFast, 'توصيل سريع', const Color(0xFFF25C05)),
               ],
             ),
           ),
@@ -364,12 +253,12 @@ class _StoreScreenState extends State<StoreScreen> {
     );
   }
 
-  Widget _buildStatItem(IconData icon, String text) {
+  Widget _buildStatItem(IconData icon, String text, Color iconColor) {
     return Column(
       children: [
-        Icon(icon, color: const Color(0xFFF25C05), size: 24),
+        Icon(icon, color: iconColor, size: 20),
         const SizedBox(height: 6),
-        Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A))),
+        Text(text, style: _tajawal(size: 14, weight: FontWeight.w900)),
       ],
     );
   }
@@ -396,27 +285,11 @@ class _StoreScreenState extends State<StoreScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? const Color(0xFFF25C05) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? const Color(0xFFF25C05) : const Color(0xFFF0F0F0),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isSelected ? const Color(0xFFF25C05).withOpacity(0.25) : Colors.black.withOpacity(0.02),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                border: Border.all(color: isSelected ? const Color(0xFFF25C05) : const Color(0xFFF0F0F0), width: 1.2),
+                boxShadow: [BoxShadow(color: isSelected ? const Color(0xFFF25C05).withOpacity(0.25) : Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Center(
-                child: Text(
-                  cat,
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w900,
-                    color: isSelected ? Colors.white : const Color(0xFF616161),
-                  ),
-                ),
+                child: Text(cat, style: _tajawal(size: 14.5, weight: FontWeight.w900, color: isSelected ? Colors.white : const Color(0xFF616161))),
               ),
             ),
           );
@@ -427,17 +300,14 @@ class _StoreScreenState extends State<StoreScreen> {
 
   Widget _buildProductsList() {
     if (_groupedProducts.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(40),
+          padding: const EdgeInsets.all(40),
           child: Column(
             children: [
-              Icon(Icons.inventory_2_outlined, size: 55, color: Color(0xFFCCCCCC)),
-              SizedBox(height: 14),
-              Text(
-                'لا توجد أصناف مضافة في هذا المتجر حالياً.',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF757575)),
-              ),
+              const Icon(FontAwesomeIcons.boxOpen, size: 50, color: Color(0xFFCCCCCC)),
+              const SizedBox(height: 14),
+              Text('لا توجد أصناف مضافة في هذا المتجر حالياً.', style: _tajawal(size: 16, weight: FontWeight.w800, color: const Color(0xFF757575))),
             ],
           ),
         ),
@@ -457,10 +327,7 @@ class _StoreScreenState extends State<StoreScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  catName,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A)),
-                ),
+                Text(catName, style: _tajawal(size: 20, weight: FontWeight.w900)),
                 const SizedBox(height: 14),
                 ListView.separated(
                   shrinkWrap: true,
@@ -478,78 +345,36 @@ class _StoreScreenState extends State<StoreScreen> {
 
                     return Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 18, offset: const Offset(0, 6))]),
                       child: Row(
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.network(
-                              pImg,
-                              width: 95,
-                              height: 95,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                width: 95,
-                                height: 95,
-                                color: const Color(0xFFF5F5F5),
-                                child: const Icon(Icons.fastfood_rounded, color: Color(0xFFBDBDBD), size: 36),
-                              ),
-                            ),
+                            child: Image.network(pImg, width: 95, height: 95, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 95, height: 95, color: const Color(0xFFF5F5F5), child: const Icon(FontAwesomeIcons.utensils, color: Color(0xFFBDBDBD)))),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  pName,
-                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF1A1A1A)),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                Text(pName, style: _tajawal(size: 17, weight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
                                 if (pDesc.isNotEmpty) ...[
                                   const SizedBox(height: 5),
-                                  Text(
-                                    pDesc,
-                                    style: const TextStyle(fontSize: 13, color: Color(0xFF757575), height: 1.35, fontWeight: FontWeight.w500),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  Text(pDesc, style: _tajawal(size: 13, weight: FontWeight.w500, color: const Color(0xFF757575)), maxLines: 2, overflow: TextOverflow.ellipsis),
                                 ],
                                 const SizedBox(height: 12),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      '${pPrice.toString()} ر.ي',
-                                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFFF25C05)),
-                                    ),
-                                    InkWell(
+                                    Text('$pPrice ر.ي', style: _tajawal(size: 17, weight: FontWeight.w900, color: const Color(0xFFF25C05))),
+                                    GestureDetector(
                                       onTap: () => _addToCart(pId, pPrice),
-                                      borderRadius: BorderRadius.circular(14),
                                       child: AnimatedContainer(
                                         duration: const Duration(milliseconds: 300),
                                         width: 40,
                                         height: 40,
-                                        decoration: BoxDecoration(
-                                          color: isAdding ? const Color(0xFFF25C05) : const Color(0xFFFFF2EB),
-                                          borderRadius: BorderRadius.circular(14),
-                                        ),
-                                        child: Icon(
-                                          isAdding ? Icons.check_rounded : Icons.add_rounded,
-                                          color: isAdding ? Colors.white : const Color(0xFFF25C05),
-                                          size: 22,
-                                        ),
+                                        decoration: BoxDecoration(color: isAdding ? const Color(0xFFF25C05) : const Color(0xFFFFF2EB), borderRadius: BorderRadius.circular(14)),
+                                        child: Icon(isAdding ? FontAwesomeIcons.check : FontAwesomeIcons.plus, color: isAdding ? Colors.white : const Color(0xFFF25C05), size: 18),
                                       ),
                                     ),
                                   ],
@@ -574,19 +399,9 @@ class _StoreScreenState extends State<StoreScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B35), Color(0xFFF25C05)],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ),
+        gradient: const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFF25C05)], begin: Alignment.topRight, end: Alignment.bottomLeft),
         borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFF25C05).withOpacity(0.4),
-            blurRadius: 25,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: const Color(0xFFF25C05).withOpacity(0.4), blurRadius: 25, offset: const Offset(0, 8))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -596,32 +411,18 @@ class _StoreScreenState extends State<StoreScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    _cartCount.toString(),
-                    style: const TextStyle(color: Color(0xFFF25C05), fontSize: 16, fontWeight: FontWeight.w900),
-                  ),
-                ),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                child: Center(child: Text('$_cartCount', style: _tajawal(size: 16, weight: FontWeight.w900, color: const Color(0xFFF25C05)))),
               ),
               const SizedBox(width: 12),
-              Text(
-                '${_cartTotal.toString()} ر.ي',
-                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
-              ),
+              Text('$_cartTotal ر.ي', style: _tajawal(size: 18, weight: FontWeight.w900, color: Colors.white)),
             ],
           ),
           Row(
-            children: const [
-              Text(
-                'إتمام الطلب',
-                style: TextStyle(color: Colors.white, fontSize: 16.5, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(width: 6),
-              Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16),
+            children: [
+              Text('إتمام الطلب', style: _tajawal(size: 16.5, weight: FontWeight.w900, color: Colors.white)),
+              const SizedBox(width: 8),
+              const Icon(FontAwesomeIcons.chevronLeft, color: Colors.white, size: 14),
             ],
           ),
         ],
