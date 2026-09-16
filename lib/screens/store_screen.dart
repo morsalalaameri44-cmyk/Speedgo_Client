@@ -1,7 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase/supabase.dart';
 
 class StoreScreen extends StatefulWidget {
@@ -185,7 +184,7 @@ class _StoreScreenState extends State<StoreScreen> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))]),
-                  child: const Icon(FontAwesomeIcons.arrowRight, color: Color(0xFF1A1A1A), size: 18),
+                  child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF1A1A1A), size: 20),
                 ),
               ),
               Text('قائمة الأصناف', style: _tajawal(size: 20, weight: FontWeight.w900)),
@@ -195,7 +194,7 @@ class _StoreScreenState extends State<StoreScreen> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))]),
-                  child: const Icon(FontAwesomeIcons.shareNodes, color: Color(0xFF1A1A1A), size: 18),
+                  child: const Icon(Icons.share_outlined, color: Color(0xFF1A1A1A), size: 20),
                 ),
               ),
             ],
@@ -242,9 +241,9 @@ class _StoreScreenState extends State<StoreScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatItem(FontAwesomeIcons.star, '4.9', const Color(0xFFFFB300)),
-                _buildStatItem(FontAwesomeIcons.clock, '30 دقيقة', const Color(0xFFF25C05)),
-                _buildStatItem(FontAwesomeIcons.truckFast, 'توصيل سريع', const Color(0xFFF25C05)),
+                _buildStatItem(Icons.star_rounded, '4.9', const Color(0xFFFFB300)),
+                _buildStatItem(Icons.access_time_filled_rounded, '30 دقيقة', const Color(0xFFF25C05)),
+                _buildStatItem(Icons.delivery_dining_rounded, 'توصيل سريع', const Color(0xFFF25C05)),
               ],
             ),
           ),
@@ -256,7 +255,7 @@ class _StoreScreenState extends State<StoreScreen> {
   Widget _buildStatItem(IconData icon, String text, Color iconColor) {
     return Column(
       children: [
-        Icon(icon, color: iconColor, size: 20),
+        Icon(icon, color: iconColor, size: 22),
         const SizedBox(height: 6),
         Text(text, style: _tajawal(size: 14, weight: FontWeight.w900)),
       ],
@@ -305,7 +304,7 @@ class _StoreScreenState extends State<StoreScreen> {
           padding: const EdgeInsets.all(40),
           child: Column(
             children: [
-              const Icon(FontAwesomeIcons.boxOpen, size: 50, color: Color(0xFFCCCCCC)),
+              const Icon(Icons.inventory_2_outlined, size: 50, color: Color(0xFFCCCCCC)),
               const SizedBox(height: 14),
               Text('لا توجد أصناف مضافة في هذا المتجر حالياً.', style: _tajawal(size: 16, weight: FontWeight.w800, color: const Color(0xFF757575))),
             ],
@@ -350,7 +349,7 @@ class _StoreScreenState extends State<StoreScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: Image.network(pImg, width: 95, height: 95, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 95, height: 95, color: const Color(0xFFF5F5F5), child: const Icon(FontAwesomeIcons.utensils, color: Color(0xFFBDBDBD)))),
+                            child: Image.network(pImg, width: 95, height: 95, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 95, height: 95, color: const Color(0xFFF5F5F5), child: const Icon(Icons.fastfood_rounded, color: Color(0xFFBDBDBD)))),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -374,7 +373,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(color: isAdding ? const Color(0xFFF25C05) : const Color(0xFFFFF2EB), borderRadius: BorderRadius.circular(14)),
-                                        child: Icon(isAdding ? FontAwesomeIcons.check : FontAwesomeIcons.plus, color: isAdding ? Colors.white : const Color(0xFFF25C05), size: 18),
+                                        child: Icon(isAdding ? Icons.check_rounded : Icons.add_rounded, color: isAdding ? Colors.white : const Color(0xFFF25C05), size: 20),
                                       ),
                                     ),
                                   ],
@@ -422,7 +421,7 @@ class _StoreScreenState extends State<StoreScreen> {
             children: [
               Text('إتمام الطلب', style: _tajawal(size: 16.5, weight: FontWeight.w900, color: Colors.white)),
               const SizedBox(width: 8),
-              const Icon(FontAwesomeIcons.chevronLeft, color: Colors.white, size: 14),
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
             ],
           ),
         ],
