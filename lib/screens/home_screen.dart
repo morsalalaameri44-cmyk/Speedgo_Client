@@ -87,9 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
       if (mounted) {
         setState(() {
-          _categories = (res as List)
-              .map((item) => Map<String, dynamic>.from(item as Map))
-              .toList();
+          _categories = List<Map<String, dynamic>>.from(res as List);
           _isLoadingCategories = false;
         });
       }
@@ -103,9 +101,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final res = await widget.supabase.from('stores').select();
 
       if (mounted) {
-        final list = (res as List)
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
+        final list = List<Map<String, dynamic>>.from(res as List);
         setState(() {
           _stores = list;
           _applyFilters();
@@ -261,8 +257,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('التوصيل إلى',
-                        style: _tajawal(size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
+                    Text('التوصيل إلى', style: _tajawal(size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
                     Row(
                       children: [
                         Text('عدن - خورمكسر', style: _tajawal(size: 15, weight: FontWeight.w800)),
@@ -420,17 +415,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               Text(b.title, style: _tajawal(size: 18, weight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 5),
-              Text(
-                b.subtitle,
-                style: _tajawal(size: 13, weight: FontWeight.w500, color: Colors.white.withOpacity(0.9)),
-              ),
+              Text(b.subtitle, style: _tajawal(size: 13, weight: FontWeight.w500, color: Colors.white.withOpacity(0.9))),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
                 child: Text(b.buttonLabel, style: _tajawal(size: 11, weight: FontWeight.w800)),
               ),
             ],
@@ -450,8 +439,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           if (actionLabel != null)
             GestureDetector(
               onTap: onActionTap,
-              child: Text(actionLabel,
-                  style: _tajawal(size: 13, weight: FontWeight.w700, color: AppColors.primary)),
+              child: Text(actionLabel, style: _tajawal(size: 13, weight: FontWeight.w700, color: AppColors.primary)),
             ),
         ],
       ),
@@ -460,17 +448,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildCategoriesGrid() {
     if (_isLoadingCategories) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-      );
+      return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: AppColors.primary)));
     }
 
-    if (_categories.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (_categories.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 5, 10, 15),
@@ -507,18 +488,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: gradient,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: gradient),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4))],
                 ),
                 child: Stack(
                   alignment: Alignment.center,
@@ -527,11 +498,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       Positioned.fill(
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          child: Image.network(
-                            imgUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const SizedBox(),
-                          ),
+                          child: Image.network(imgUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox()),
                         ),
                       ),
                     Positioned(
@@ -540,24 +507,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       right: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          name,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _tajawal(size: 12, weight: FontWeight.w800, color: AppColors.textDark),
-                        ),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 2))]),
+                        child: Text(name, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: _tajawal(size: 12, weight: FontWeight.w800, color: AppColors.textDark)),
                       ),
                     ),
                   ],
@@ -572,12 +523,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildStoresList() {
     if (_isLoadingStores) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(30),
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-      );
+      return const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator(color: AppColors.primary)));
     }
 
     if (_filteredStores.isEmpty) {
@@ -588,8 +534,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               const Icon(FontAwesomeIcons.store, size: 40, color: AppColors.textGray),
               const SizedBox(height: 10),
-              Text('لا توجد متاجر مطابقة حالياً!',
-                  style: _tajawal(size: 14, weight: FontWeight.w700, color: AppColors.textGray)),
+              Text('لا توجد متاجر مطابقة حالياً!', style: _tajawal(size: 14, weight: FontWeight.w700, color: AppColors.textGray)),
             ],
           ),
         ),
@@ -599,12 +544,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: _filteredStores
-            .map((store) => Padding(
-                  padding: const EdgeInsets.only(bottom: 15),
-                  child: _buildStoreCard(store),
-                ))
-            .toList(),
+        children: _filteredStores.map((store) => Padding(padding: const EdgeInsets.only(bottom: 15), child: _buildStoreCard(store))).toList(),
       ),
     );
   }
@@ -613,8 +553,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final storeId = store['id']?.toString() ?? '';
     final name = store['name'] ?? store['store_name'] ?? 'متجر غير مسمى';
     final tags = store['category'] ?? 'عام';
-    final imageUrl = store['logo_url'] ??
-        'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200';
+    final imageUrl = store['logo_url'] ?? 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200';
 
     return GestureDetector(
       onTap: () {
@@ -622,28 +561,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => StoreScreen(
-                supabase: widget.supabase,
-                storeId: storeId,
-              ),
+              builder: (_) => StoreScreen(supabase: widget.supabase, storeId: storeId),
             ),
           );
         }
       },
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFDFDFD)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFFDFDFD)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8))]),
         child: Row(
           children: [
             Container(
@@ -653,17 +578,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: const Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border),
-                image: DecorationImage(
-                  image: NetworkImage(imageUrl),
-                  fit: BoxFit.cover,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4))],
               ),
             ),
             const SizedBox(width: 15),
@@ -674,8 +590,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 children: [
                   Text(name, style: _tajawal(size: 16, weight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  Text(tags,
-                      style: _tajawal(size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
+                  Text(tags, style: _tajawal(size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -708,43 +623,21 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildBottomNav() {
     return Container(
       height: 75,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: const Border(top: BorderSide(color: AppColors.border)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Colors.white, border: const Border(top: BorderSide(color: AppColors.border)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -4))]),
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _navItem(icon: FontAwesomeIcons.house, label: 'الرئيسية', active: true, onTap: () {}),
           _navItem(icon: FontAwesomeIcons.clipboardList, label: 'طلباتي', active: false, onTap: () {}),
-          _navItem(
-            icon: FontAwesomeIcons.bagShopping,
-            label: 'السلة',
-            active: false,
-            badgeCount: 2,
-            onTap: () {},
-          ),
+          _navItem(icon: FontAwesomeIcons.bagShopping, label: 'السلة', active: false, badgeCount: 2, onTap: () {}),
           _navItem(icon: FontAwesomeIcons.user, label: 'حسابي', active: false, onTap: () {}),
         ],
       ),
     );
   }
 
-  Widget _navItem({
-    required IconData icon,
-    required String label,
-    required bool active,
-    required VoidCallback onTap,
-    int? badgeCount,
-  }) {
+  Widget _navItem({required IconData icon, required String label, required bool active, required VoidCallback onTap, int? badgeCount}) {
     final color = active ? AppColors.primary : AppColors.textGray;
     return GestureDetector(
       onTap: onTap,
@@ -765,15 +658,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       width: 16,
                       height: 16,
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        style: _tajawal(size: 9, weight: FontWeight.w800, color: Colors.white),
-                      ),
+                      decoration: BoxDecoration(color: AppColors.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                      child: Text('$badgeCount', style: _tajawal(size: 9, weight: FontWeight.w800, color: Colors.white)),
                     ),
                   ),
               ],
