@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:supabase/supabase.dart';
 import 'package:speedgo_client/screens/store_screen.dart';
 
@@ -87,7 +86,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
       if (mounted) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(res as List);
+          _categories = (res as List)
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList();
           _isLoadingCategories = false;
         });
       }
@@ -101,7 +102,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final res = await widget.supabase.from('stores').select();
 
       if (mounted) {
-        final list = List<Map<String, dynamic>>.from(res as List);
+        final list = (res as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
         setState(() {
           _stores = list;
           _applyFilters();
@@ -251,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(FontAwesomeIcons.locationDot, color: AppColors.primary, size: 18),
+                  child: const Icon(Icons.location_on, color: AppColors.primary, size: 20),
                 ),
                 const SizedBox(width: 10),
                 Column(
@@ -262,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       children: [
                         Text('عدن - خورمكسر', style: _tajawal(size: 15, weight: FontWeight.w800)),
                         const SizedBox(width: 3),
-                        const Icon(FontAwesomeIcons.chevronDown, size: 10, color: AppColors.textDark),
+                        const Icon(Icons.keyboard_arrow_down, size: 14, color: AppColors.textDark),
                       ],
                     ),
                   ],
@@ -284,9 +287,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
-                  const Icon(FontAwesomeIcons.bell, size: 18, color: AppColors.textDark),
+                  const Icon(Icons.notifications_none_rounded, size: 20, color: AppColors.textDark),
                   Positioned(
-                    top: 5,
+                    top: 6,
                     right: 6,
                     child: Container(
                       width: 8,
@@ -319,11 +322,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           hintStyle: _tajawal(size: 14, weight: FontWeight.w400, color: AppColors.textGray),
           filled: true,
           fillColor: AppColors.searchBg,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.only(right: 18, left: 10),
-            child: Icon(FontAwesomeIcons.magnifyingGlass, size: 16, color: AppColors.textGray),
-          ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+          prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textGray),
           contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 15),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -346,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final banners = [
       _BannerData(
         gradient: const [Color(0xFFFF6B35), Color(0xFFF25C05)],
-        icon: FontAwesomeIcons.bolt,
+        icon: Icons.bolt_rounded,
         title: 'عرض Speed Go الخاطف!',
         subtitle: 'توصيل مجاني لجميع طلبات السوبرماركت اليوم',
         buttonLabel: 'اطلب الآن',
@@ -354,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       _BannerData(
         gradient: const [Color(0xFF00B4D8), Color(0xFF0077B6)],
-        icon: FontAwesomeIcons.prescriptionBottleMedical,
+        icon: Icons.medical_services_rounded,
         title: 'صحتك تهمنا',
         subtitle: 'اطلب أدويتك ومستلزماتك من أقرب صيدلية بلحظات',
         buttonLabel: 'تصفح الصيدليات',
@@ -532,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.all(30),
           child: Column(
             children: [
-              const Icon(FontAwesomeIcons.store, size: 40, color: AppColors.textGray),
+              const Icon(Icons.store_mall_directory_outlined, size: 40, color: AppColors.textGray),
               const SizedBox(height: 10),
               Text('لا توجد متاجر مطابقة حالياً!', style: _tajawal(size: 14, weight: FontWeight.w700, color: AppColors.textGray)),
             ],
@@ -594,11 +593,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _metaItem(FontAwesomeIcons.star, AppColors.ratingStar, '4.8'),
+                      _metaItem(Icons.star_rounded, AppColors.ratingStar, '4.8'),
                       const SizedBox(width: 12),
-                      _metaItem(FontAwesomeIcons.clock, AppColors.timeIcon, '25-35 د'),
+                      _metaItem(Icons.access_time_filled_rounded, AppColors.timeIcon, '25-35 د'),
                       const SizedBox(width: 12),
-                      _metaItem(FontAwesomeIcons.motorcycle, AppColors.deliveryIcon, 'سريع'),
+                      _metaItem(Icons.delivery_dining_rounded, AppColors.deliveryIcon, 'سريع'),
                     ],
                   ),
                 ],
@@ -613,7 +612,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _metaItem(IconData icon, Color color, String label) {
     return Row(
       children: [
-        Icon(icon, size: 12, color: color),
+        Icon(icon, size: 14, color: color),
         const SizedBox(width: 4),
         Text(label, style: _tajawal(size: 12, weight: FontWeight.w700, color: AppColors.textDark)),
       ],
@@ -628,10 +627,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _navItem(icon: FontAwesomeIcons.house, label: 'الرئيسية', active: true, onTap: () {}),
-          _navItem(icon: FontAwesomeIcons.clipboardList, label: 'طلباتي', active: false, onTap: () {}),
-          _navItem(icon: FontAwesomeIcons.bagShopping, label: 'السلة', active: false, badgeCount: 2, onTap: () {}),
-          _navItem(icon: FontAwesomeIcons.user, label: 'حسابي', active: false, onTap: () {}),
+          _navItem(icon: Icons.home_rounded, label: 'الرئيسية', active: true, onTap: () {}),
+          _navItem(icon: Icons.assignment_outlined, label: 'طلباتي', active: false, onTap: () {}),
+          _navItem(icon: Icons.shopping_bag_outlined, label: 'السلة', active: false, badgeCount: 2, onTap: () {}),
+          _navItem(icon: Icons.person_outline_rounded, label: 'حسابي', active: false, onTap: () {}),
         ],
       ),
     );
@@ -649,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, size: 20, color: color),
+                Icon(icon, size: 22, color: color),
                 if (badgeCount != null)
                   Positioned(
                     top: -5,
