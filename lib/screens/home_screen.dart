@@ -1,37 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:speedgo_client/screens/store_screen.dart';
 
 /// ============================================================
-///  نقطة تشغيل تجريبية للمعاينة المستقلة (يمكن حذفها عند الدمج
-///  مع بقية شاشات التطبيق).
-/// ============================================================
-void main() {
-  runApp(const SpeedGoApp());
-}
-
-class SpeedGoApp extends StatelessWidget {
-  const SpeedGoApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Speed Go',
-      theme: ThemeData(
-        scaffoldBackgroundColor: AppColors.bgLight,
-        fontFamily: GoogleFonts.tajawal().fontFamily,
-        useMaterial3: true,
-      ),
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar'), Locale('en')],
-      home: const HomePage(),
-    );
-  }
-}
-
-/// ============================================================
-///  الألوان — مطابقة تماماً لمتغيرات :root في ملف CSS الأصلي
+/// الألوان — مطابقة تماماً لمتغيرات :root في ملف CSS الأصلي
 /// ============================================================
 class AppColors {
   static const Color primary = Color(0xFFF25C05);
@@ -48,7 +23,7 @@ class AppColors {
   static const Color deliveryIcon = Color(0xFF2A9D8F);
 }
 
-/// تدرجات الأقسام (category-item:nth-child(10n+1) ... (10n+0))
+/// تدرجات الأقسام (10 تدرجات متتابعة)
 const List<List<Color>> kCategoryGradients = [
   [Color(0xFFFF9F1C), Color(0xFFF25C05)],
   [Color(0xFFFF7EB3), Color(0xFFFF758C)],
@@ -63,115 +38,121 @@ const List<List<Color>> kCategoryGradients = [
 ];
 
 /// ============================================================
-///  نماذج البيانات
-///  ⚠️ placeholder مؤقت — سيتم استبداله ببيانات home.js الحقيقية
-///  (يبدو أنها تُجلب من Supabase) عند إرسال ذلك الملف.
+/// الصفحة الرئيسية - HomeScreen
 /// ============================================================
-class CategoryModel {
-  final String name;
-  final IconData icon;
-  const CategoryModel(this.name, this.icon);
-}
-
-class StoreModel {
-  final String name;
-  final String tags;
-  final double rating;
-  final String time;
-  final String deliveryFee;
-  final String imageUrl;
-  const StoreModel({
-    required this.name,
-    required this.tags,
-    required this.rating,
-    required this.time,
-    required this.deliveryFee,
-    required this.imageUrl,
-  });
-}
-
-final List<CategoryModel> kPlaceholderCategories = [
-  CategoryModel('مطاعم', FontAwesomeIcons.utensils),
-  CategoryModel('سوبرماركت', FontAwesomeIcons.cartShopping),
-  CategoryModel('صيدليات', FontAwesomeIcons.prescriptionBottleMedical),
-  CategoryModel('حلويات', FontAwesomeIcons.iceCream),
-  CategoryModel('مخابز', FontAwesomeIcons.breadSlice),
-  CategoryModel('مشروبات', FontAwesomeIcons.mugSaucer),
-  CategoryModel('لحوم', FontAwesomeIcons.drumstickBite),
-  CategoryModel('إلكترونيات', FontAwesomeIcons.mobileScreen),
-  CategoryModel('هدايا', FontAwesomeIcons.gift),
-];
-
-final List<StoreModel> kPlaceholderStores = [
-  StoreModel(
-    name: 'مطعم البيت الشامي',
-    tags: 'مأكولات شامية • مشاوي',
-    rating: 4.8,
-    time: '25-35 د',
-    deliveryFee: '500 ر.ي',
-    imageUrl:
-        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200',
-  ),
-  StoreModel(
-    name: 'سوبرماركت الوفاء',
-    tags: 'بقالة • منتجات منزلية',
-    rating: 4.6,
-    time: '15-25 د',
-    deliveryFee: 'مجاني',
-    imageUrl:
-        'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=200',
-  ),
-  StoreModel(
-    name: 'صيدلية الشفاء',
-    tags: 'أدوية • مستلزمات طبية',
-    rating: 4.9,
-    time: '10-20 د',
-    deliveryFee: '300 ر.ي',
-    imageUrl:
-        'https://images.unsplash.com/photo-1576602976047-174e57a47881?w=200',
-  ),
-];
-
-/// ============================================================
-///  الصفحة الرئيسية
-/// ============================================================
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomeScreen extends StatefulWidget {
+  final SupabaseClient supabase;
+  const HomeScreen({super.key, required this.supabase});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _shakeController;
   int? _shakingIndex;
+
+  List<Map<String, dynamic>> _categories = [];
+  List<Map<String, dynamic>> _stores = [];
+  List<Map<String, dynamic>> _filteredStores = [];
+
+  bool _isLoadingCategories = true;
+  bool _isLoadingStores = true;
+  String _activeCategoryFilter = 'الكل';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000), // مطابق لمدة shakeOneSecond
+      duration: const Duration(milliseconds: 1000),
     );
+    _fetchData();
   }
 
   @override
   void dispose() {
     _shakeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  void _triggerShake(int index) {
-    setState(() => _shakingIndex = index);
-    _shakeController.forward(from: 0).whenComplete(() {
-      if (mounted) setState(() => _shakingIndex = null);
+  // --- جلب البيانات الفعلي من Supabase ---
+  Future<void> _fetchData() async {
+    await Future.wait([
+      _fetchCategories(),
+      _fetchStores(),
+    ]);
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final res = await widget.supabase
+          .from('categories')
+          .select()
+          .order('sort_order', ascending: true);
+
+      if (mounted) {
+        setState(() {
+          _categories = List<Map<String, dynamic>>.from(res as List);
+          _isLoadingCategories = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingCategories = false);
+    }
+  }
+
+  Future<void> _fetchStores() async {
+    try {
+      final res = await widget.supabase.from('stores').select();
+
+      if (mounted) {
+        final list = List<Map<String, dynamic>>.from(res as List);
+        setState(() {
+          _stores = list;
+          _applyFilters();
+          _isLoadingStores = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingStores = false);
+    }
+  }
+
+  void _applyFilters() {
+    final cleanSearch = _searchController.text.trim().toLowerCase();
+    setState(() {
+      _filteredStores = _stores.where((s) {
+        final name = (s['name'] ?? s['store_name'] ?? '').toString().toLowerCase();
+        final cat = (s['category'] ?? '').toString().toLowerCase();
+
+        final matchesCategory = _activeCategoryFilter == 'الكل' ||
+            cat.contains(_activeCategoryFilter.toLowerCase());
+        final matchesSearch = cleanSearch.isEmpty ||
+            name.contains(cleanSearch) ||
+            cat.contains(cleanSearch);
+
+        return matchesCategory && matchesSearch;
+      }).toList();
     });
   }
 
-  // ---- محاكاة CSS @keyframes shakeOneSecond بدقّة نسب الوقت نفسها ----
-  double _interpolateKeyframes(
-      double t, List<double> times, List<double> values) {
+  void _triggerShake(int index, String categoryName) {
+    setState(() => _shakingIndex = index);
+    _shakeController.forward(from: 0).whenComplete(() {
+      if (mounted) {
+        setState(() {
+          _shakingIndex = null;
+          _activeCategoryFilter = (_activeCategoryFilter == categoryName) ? 'الكل' : categoryName;
+          _applyFilters();
+        });
+      }
+    });
+  }
+
+  double _interpolateKeyframes(double t, List<double> times, List<double> values) {
     for (int i = 0; i < times.length - 1; i++) {
       if (t >= times[i] && t <= times[i + 1]) {
         final localT = (t - times[i]) / (times[i + 1] - times[i]);
@@ -214,18 +195,37 @@ class _HomePageState extends State<HomePage>
               _buildHeader(),
               _buildSearchSection(),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(bottom: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildBannersSlider(),
-                      _buildSectionTitle('أقسام Speed Go',
-                          actionLabel: 'عرض الكل'),
-                      _buildCategoriesGrid(),
-                      _buildSectionTitle('المتاجر المتاحة بالقرب منك'),
-                      _buildStoresList(),
-                    ],
+                child: RefreshIndicator(
+                  onRefresh: _fetchData,
+                  color: AppColors.primary,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBannersSlider(),
+                        _buildSectionTitle(
+                          'أقسام Speed Go',
+                          actionLabel: 'عرض الكل',
+                          onActionTap: () {
+                            setState(() {
+                              _activeCategoryFilter = 'الكل';
+                              _applyFilters();
+                            });
+                          },
+                        ),
+                        _buildCategoriesGrid(),
+                        _buildSectionTitle(
+                          _activeCategoryFilter == 'الكل'
+                              ? 'المتاجر المتاحة بالقرب منك'
+                              : 'متاجر قسم ($_activeCategoryFilter)',
+                        ),
+                        _buildStoresList(),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -241,12 +241,16 @@ class _HomePageState extends State<HomePage>
   Widget _buildHeader() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('ستفتح خريطة تحديد موقع التوصيل في التحديث القادم!')),
+              );
+            },
             child: Row(
               children: [
                 Container(
@@ -256,25 +260,19 @@ class _HomePageState extends State<HomePage>
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(FontAwesomeIcons.locationDot,
-                      color: AppColors.primary, size: 18),
+                  child: const Icon(FontAwesomeIcons.locationDot, color: AppColors.primary, size: 18),
                 ),
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('التوصيل إلى',
-                        style: _tajawal(
-                            size: 12,
-                            weight: FontWeight.w500,
-                            color: AppColors.textGray)),
+                        style: _tajawal(size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
                     Row(
                       children: [
-                        Text('عدن - خورمكسر',
-                            style: _tajawal(size: 15, weight: FontWeight.w800)),
+                        Text('عدن - خورمكسر', style: _tajawal(size: 15, weight: FontWeight.w800)),
                         const SizedBox(width: 3),
-                        const Icon(FontAwesomeIcons.chevronDown,
-                            size: 10, color: AppColors.textDark),
+                        const Icon(FontAwesomeIcons.chevronDown, size: 10, color: AppColors.textDark),
                       ],
                     ),
                   ],
@@ -296,8 +294,7 @@ class _HomePageState extends State<HomePage>
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
-                  const Icon(FontAwesomeIcons.bell,
-                      size: 18, color: AppColors.textDark),
+                  const Icon(FontAwesomeIcons.bell, size: 18, color: AppColors.textDark),
                   Positioned(
                     top: 5,
                     right: 6,
@@ -325,23 +322,20 @@ class _HomePageState extends State<HomePage>
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(20, 5, 20, 15),
       child: TextField(
-        style: _tajawal(size: 14, weight: FontWeight.w400),
+        controller: _searchController,
+        onChanged: (_) => _applyFilters(),
+        style: _tajawal(size: 14, weight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: 'ابحث عن مطعم، سوبرماركت، صيدلية...',
-          hintStyle:
-              _tajawal(size: 14, weight: FontWeight.w400, color: AppColors.textGray),
+          hintStyle: _tajawal(size: 14, weight: FontWeight.w400, color: AppColors.textGray),
           filled: true,
           fillColor: AppColors.searchBg,
-          // في CSS الأيقونة على اليمين (right:18px)؛ لأن الاتجاه RTL فإن
-          // "بداية" الحقل (prefixIcon) هي فعلياً اليمين هنا.
           prefixIcon: const Padding(
             padding: EdgeInsets.only(right: 18, left: 10),
-            child: Icon(FontAwesomeIcons.magnifyingGlass,
-                size: 16, color: AppColors.textGray),
+            child: Icon(FontAwesomeIcons.magnifyingGlass, size: 16, color: AppColors.textGray),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 15),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: AppColors.searchBorder),
@@ -368,6 +362,7 @@ class _HomePageState extends State<HomePage>
         title: 'عرض Speed Go الخاطف!',
         subtitle: 'توصيل مجاني لجميع طلبات السوبرماركت اليوم',
         buttonLabel: 'اطلب الآن',
+        category: 'سوبر ماركت',
       ),
       _BannerData(
         gradient: const [Color(0xFF00B4D8), Color(0xFF0077B6)],
@@ -375,9 +370,9 @@ class _HomePageState extends State<HomePage>
         title: 'صحتك تهمنا',
         subtitle: 'اطلب أدويتك ومستلزماتك من أقرب صيدلية بلحظات',
         buttonLabel: 'تصفح الصيدليات',
+        category: 'صيدليات',
       ),
     ];
-
     return SizedBox(
       height: 140,
       child: ListView.builder(
@@ -387,11 +382,18 @@ class _HomePageState extends State<HomePage>
         itemBuilder: (context, index) {
           final b = banners[index];
           return Padding(
-            padding:
-                EdgeInsets.only(left: index == banners.length - 1 ? 0 : 15),
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.85,
-              child: _buildBannerCard(b),
+            padding: EdgeInsets.only(left: index == banners.length - 1 ? 0 : 15),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _activeCategoryFilter = b.category;
+                  _applyFilters();
+                });
+              },
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.85,
+                child: _buildBannerCard(b),
+              ),
             ),
           );
         },
@@ -405,7 +407,6 @@ class _HomePageState extends State<HomePage>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        // يطابق linear-gradient(135deg, ...) في CSS
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -424,32 +425,20 @@ class _HomePageState extends State<HomePage>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(b.title,
-                  style: _tajawal(
-                      size: 18, weight: FontWeight.w800, color: Colors.white)),
+              Text(b.title, style: _tajawal(size: 18, weight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 5),
               Text(
                 b.subtitle,
-                style: _tajawal(
-                    size: 13,
-                    weight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.9)),
+                style: _tajawal(size: 13, weight: FontWeight.w500, color: Colors.white.withOpacity(0.9)),
               ),
               const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.textDark,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(b.buttonLabel,
-                    style: _tajawal(size: 11, weight: FontWeight.w800)),
+                child: Text(b.buttonLabel, style: _tajawal(size: 11, weight: FontWeight.w800)),
               ),
             ],
           ),
@@ -459,7 +448,7 @@ class _HomePageState extends State<HomePage>
   }
 
   // ---------------- عنوان القسم ----------------
-  Widget _buildSectionTitle(String title, {String? actionLabel}) {
+  Widget _buildSectionTitle(String title, {String? actionLabel, VoidCallback? onActionTap}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 15, 20, 10),
       child: Row(
@@ -468,24 +457,36 @@ class _HomePageState extends State<HomePage>
           Text(title, style: _tajawal(size: 17, weight: FontWeight.w800)),
           if (actionLabel != null)
             GestureDetector(
-              onTap: () {},
+              onTap: onActionTap,
               child: Text(actionLabel,
-                  style: _tajawal(
-                      size: 13, weight: FontWeight.w700, color: AppColors.primary)),
+                  style: _tajawal(size: 13, weight: FontWeight.w700, color: AppColors.primary)),
             ),
         ],
       ),
     );
   }
 
-  // ---------------- شبكة الأقسام ----------------
+  // ---------------- شبكة الأقسام Dynamic Supabase ----------------
   Widget _buildCategoriesGrid() {
+    if (_isLoadingCategories) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    if (_categories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 5, 10, 15),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: kPlaceholderCategories.length,
+        itemCount: _categories.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
           mainAxisSpacing: 12,
@@ -493,10 +494,13 @@ class _HomePageState extends State<HomePage>
           mainAxisExtent: 145,
         ),
         itemBuilder: (context, index) {
-          final cat = kPlaceholderCategories[index];
+          final cat = _categories[index];
+          final name = (cat['name'] ?? '').toString().trim();
+          final imgUrl = (cat['image_url'] ?? '').toString();
           final gradient = kCategoryGradients[index % kCategoryGradients.length];
+
           return GestureDetector(
-            onTap: () => _triggerShake(index),
+            onTap: () => _triggerShake(index, name),
             child: AnimatedBuilder(
               animation: _shakeController,
               builder: (context, child) {
@@ -510,7 +514,6 @@ class _HomePageState extends State<HomePage>
                 );
               },
               child: Container(
-                padding: const EdgeInsets.only(top: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
@@ -526,13 +529,46 @@ class _HomePageState extends State<HomePage>
                     ),
                   ],
                 ),
-                child: Column(
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Icon(cat.icon, size: 40, color: Colors.white),
-                    const SizedBox(height: 10),
-                    Text(cat.name,
-                        style: _tajawal(
-                            size: 12, weight: FontWeight.w700, color: Colors.white)),
+                    if (imgUrl.isNotEmpty)
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.network(
+                            imgUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox(),
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _tajawal(size: 12, weight: FontWeight.w800, color: AppColors.textDark),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -543,12 +579,37 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  // ---------------- قائمة المتاجر ----------------
+  // ---------------- قائمة المتاجر Dynamic Supabase ----------------
   Widget _buildStoresList() {
+    if (_isLoadingStores) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(30),
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    if (_filteredStores.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            children: [
+              const Icon(FontAwesomeIcons.store, size: 40, color: AppColors.textGray),
+              const SizedBox(height: 10),
+              Text('لا توجد متاجر مطابقة حالياً!',
+                  style: _tajawal(size: 14, weight: FontWeight.w700, color: AppColors.textGray)),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: kPlaceholderStores
+        children: _filteredStores
             .map((store) => Padding(
                   padding: const EdgeInsets.only(bottom: 15),
                   child: _buildStoreCard(store),
@@ -558,9 +619,27 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildStoreCard(StoreModel store) {
+  Widget _buildStoreCard(Map<String, dynamic> store) {
+    final storeId = store['id']?.toString() ?? '';
+    final name = store['name'] ?? store['store_name'] ?? 'متجر غير مسمى';
+    final tags = store['category'] ?? 'عام';
+    final imageUrl = store['logo_url'] ??
+        'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=200';
+
     return GestureDetector(
-      onTap: () {},
+      onTap: () {
+        if (storeId.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StoreScreen(
+                supabase: widget.supabase,
+                storeId: storeId,
+              ),
+            ),
+          );
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -585,7 +664,9 @@ class _HomePageState extends State<HomePage>
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border),
                 image: DecorationImage(
-                    image: NetworkImage(store.imageUrl), fit: BoxFit.cover),
+                  image: NetworkImage(imageUrl),
+                  fit: BoxFit.cover,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.08),
@@ -601,21 +682,18 @@ class _HomePageState extends State<HomePage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(store.name, style: _tajawal(size: 16, weight: FontWeight.w800)),
+                  Text(name, style: _tajawal(size: 16, weight: FontWeight.w800)),
                   const SizedBox(height: 4),
-                  Text(store.tags,
-                      style: _tajawal(
-                          size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
+                  Text(tags,
+                      style: _tajawal(size: 12, weight: FontWeight.w500, color: AppColors.textGray)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _metaItem(FontAwesomeIcons.star, AppColors.ratingStar,
-                          store.rating.toString()),
+                      _metaItem(FontAwesomeIcons.star, AppColors.ratingStar, '4.8'),
                       const SizedBox(width: 12),
-                      _metaItem(FontAwesomeIcons.clock, AppColors.timeIcon, store.time),
+                      _metaItem(FontAwesomeIcons.clock, AppColors.timeIcon, '25-35 د'),
                       const SizedBox(width: 12),
-                      _metaItem(FontAwesomeIcons.motorcycle, AppColors.deliveryIcon,
-                          store.deliveryFee),
+                      _metaItem(FontAwesomeIcons.motorcycle, AppColors.deliveryIcon, 'سريع'),
                     ],
                   ),
                 ],
@@ -657,11 +735,7 @@ class _HomePageState extends State<HomePage>
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _navItem(icon: FontAwesomeIcons.house, label: 'الرئيسية', active: true, onTap: () {}),
-          _navItem(
-              icon: FontAwesomeIcons.clipboardList,
-              label: 'طلباتي',
-              active: false,
-              onTap: () {}),
+          _navItem(icon: FontAwesomeIcons.clipboardList, label: 'طلباتي', active: false, onTap: () {}),
           _navItem(
             icon: FontAwesomeIcons.bagShopping,
             label: 'السلة',
@@ -730,11 +804,14 @@ class _BannerData {
   final String title;
   final String subtitle;
   final String buttonLabel;
+  final String category;
+
   const _BannerData({
     required this.gradient,
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.buttonLabel,
+    required this.category,
   });
 }
