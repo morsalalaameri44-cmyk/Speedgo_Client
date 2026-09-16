@@ -2,12 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase/supabase.dart';
 import 'package:speedgo_client/screens/store_screen.dart';
 
-/// ============================================================
-/// الألوان — مطابقة تماماً لمتغيرات :root في ملف CSS الأصلي
-/// ============================================================
 class AppColors {
   static const Color primary = Color(0xFFF25C05);
   static const Color primaryLight = Color(0xFFFFF2EB);
@@ -23,7 +20,6 @@ class AppColors {
   static const Color deliveryIcon = Color(0xFF2A9D8F);
 }
 
-/// تدرجات الأقسام (10 تدرجات متتابعة)
 const List<List<Color>> kCategoryGradients = [
   [Color(0xFFFF9F1C), Color(0xFFF25C05)],
   [Color(0xFFFF7EB3), Color(0xFFFF758C)],
@@ -37,9 +33,6 @@ const List<List<Color>> kCategoryGradients = [
   [Color(0xFFF4A261), Color(0xFFE76F51)],
 ];
 
-/// ============================================================
-/// الصفحة الرئيسية - HomeScreen
-/// ============================================================
 class HomeScreen extends StatefulWidget {
   final SupabaseClient supabase;
   const HomeScreen({super.key, required this.supabase});
@@ -78,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  // --- جلب البيانات الفعلي من Supabase ---
   Future<void> _fetchData() async {
     await Future.wait([
       _fetchCategories(),
@@ -95,7 +87,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
       if (mounted) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(res as List);
+          _categories = (res as List)
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList();
           _isLoadingCategories = false;
         });
       }
@@ -109,7 +103,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       final res = await widget.supabase.from('stores').select();
 
       if (mounted) {
-        final list = List<Map<String, dynamic>>.from(res as List);
+        final list = (res as List)
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
         setState(() {
           _stores = list;
           _applyFilters();
@@ -237,7 +233,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- الهيدر ----------------
   Widget _buildHeader() {
     return Container(
       color: Colors.white,
@@ -316,7 +311,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- شريط البحث ----------------
   Widget _buildSearchSection() {
     return Container(
       color: Colors.white,
@@ -353,7 +347,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- بانرات العروض ----------------
   Widget _buildBannersSlider() {
     final banners = [
       _BannerData(
@@ -447,7 +440,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- عنوان القسم ----------------
   Widget _buildSectionTitle(String title, {String? actionLabel, VoidCallback? onActionTap}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 15, 20, 10),
@@ -466,7 +458,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- شبكة الأقسام Dynamic Supabase ----------------
   Widget _buildCategoriesGrid() {
     if (_isLoadingCategories) {
       return const Center(
@@ -579,7 +570,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- قائمة المتاجر Dynamic Supabase ----------------
   Widget _buildStoresList() {
     if (_isLoadingStores) {
       return const Center(
@@ -715,7 +705,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ---------------- شريط التنقل السفلي ----------------
   Widget _buildBottomNav() {
     return Container(
       height: 75,
