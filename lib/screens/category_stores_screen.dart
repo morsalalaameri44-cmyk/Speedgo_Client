@@ -40,7 +40,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     );
 
     _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.outBack),
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeIn),
@@ -67,7 +67,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
         }).toList();
 
         setState(() {
-          _stores = filtered.isNotEmpty ? filtered : list; // إرجاع القائمة كاملة كبديل إن لم توجد نتائج
+          _stores = filtered.isNotEmpty ? filtered : list;
           _isLoading = false;
         });
       }
@@ -125,7 +125,6 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     );
   }
 
-  // أزرار التحويل بين عرض "قائمة" و "شبكة"
   Widget _buildViewToggle() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -183,7 +182,6 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     );
   }
 
-  // 1. عرض بطاقات المتاجر بنمط القائمة (مطابق للصورة تماماً)
   Widget _buildVerticalList() {
     return ListView.separated(
       padding: const EdgeInsets.all(20),
@@ -306,7 +304,6 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     );
   }
 
-  // 2. عرض بطاقات المتاجر بنمط الشبكة (Grid)
   Widget _buildGridList() {
     return GridView.builder(
       padding: const EdgeInsets.all(20),
