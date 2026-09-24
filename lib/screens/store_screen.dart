@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase/supabase.dart';
+import 'package:speedgo_client/screens/checkout_screen.dart';
 
 class StoreScreen extends StatefulWidget {
   final SupabaseClient supabase;
@@ -24,8 +25,8 @@ class _StoreScreenState extends State<StoreScreen> {
   String? _errorMessage;
   String _selectedCategory = '';
 
-  int _cartCount = 0;
-  num _cartTotal = 0;
+  // خريطة لتخزين تفاصيل عناصر السلة المضافة
+  final Map<String, CartItemModel> _cartItemsMap = {};
   final Set<String> _animatingProductIds = {};
 
   final ScrollController _scrollController = ScrollController();
@@ -100,11 +101,18 @@ class _StoreScreenState extends State<StoreScreen> {
     }
   }
 
-  void _addToCart(String productId, num price) {
+  void _addToCart(String productId, String name, num price) {
     setState(() {
       _animatingProductIds.add(productId);
-      _cartCount++;
-      _cartTotal += price;
+      if (_cartItemsMap.containsKey(productId)) {
+        _cartItemsMap[productId]!.qty += 1;
+      } else {
+        _cartItemsMap[productId] = CartItemModel(
+          name: name,
+          price: price.toDouble(),
+          qty: 1,
+        );
+      }
     });
 
     Future.delayed(const Duration(milliseconds: 600), () {
@@ -112,6 +120,14 @@ class _StoreScreenState extends State<StoreScreen> {
         setState(() => _animatingProductIds.remove(productId));
       }
     });
+  }
+
+  int get _cartTotalItems {
+    return _cartItemsMap.values.fold(0, (sum, item) => sum + item.qty);
+  }
+
+  double get _cartTotalAmount {
+    return _cartItemsMap.values.fold(0.0, (sum, item) => sum + (item.price * item.qty));
   }
 
   TextStyle _tajawal({required double size, required FontWeight weight, Color color = const Color(0xFF1A1A1A)}) {
@@ -161,7 +177,7 @@ class _StoreScreenState extends State<StoreScreen> {
               ),
 
             Positioned(top: 0, left: 0, right: 0, child: _buildGlassHeader()),
-            if (_cartCount > 0) Positioned(bottom: 22, left: 20, right: 20, child: _buildFloatingCartBar()),
+            if (_cartTotalItems > 0) Positioned(bottom: 22, left: 20, right: 20, child: _buildFloatingCartBar()),
           ],
         ),
       ),
@@ -367,7 +383,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                   children: [
                                     Text('$pPrice ر.ي', style: _tajawal(size: 17, weight: FontWeight.w900, color: const Color(0xFFF25C05))),
                                     GestureDetector(
-                                      onTap: () => _addToCart(pId, pPrice),
+                                      onTap: () => _addToCart(pId, pName, pPrice),
                                       child: AnimatedContainer(
                                         duration: const Duration(milliseconds: 300),
                                         width: 40,
@@ -395,36 +411,59 @@ class _StoreScreenState extends State<StoreScreen> {
   }
 
   Widget _buildFloatingCartBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFF25C05)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [BoxShadow(color: const Color(0xFFF25C05).withOpacity(0.4), blurRadius: 25, offset: const Offset(0, 8))],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: Center(child: Text('$_cartCount', style: _tajawal(size: 16, weight: FontWeight.w900, color: const Color(0xFFF25C05)))),
-              ),
-              const SizedBox(width: 12),
-              Text('$_cartTotal ر.ي', style: _tajawal(size: 18, weight: FontWeight.w900, color: Colors.white)),
-            ],
+    return GestureDetector(
+      onTap: () async {
+        final cartList = _cartItemsMap.values.toList();
+        if (cartList.isEmpty) return;
+
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => CheckoutScreen(
+              supabase: widget.supabase,
+              initialCartItems: cartList,
+              storeId: widget.storeId,
+            ),
           ),
-          Row(
-            children: [
-              Text('إتمام الطلب', style: _tajawal(size: 16.5, weight: FontWeight.w900, color: Colors.white)),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
-            ],
-          ),
-        ],
+        );
+
+        if (result == true) {
+          setState(() {
+            _cartItemsMap.clear();
+          });
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFF25C05)], begin: Alignment.topRight, end: Alignment.bottomLeft),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [BoxShadow(color: const Color(0xFFF25C05).withOpacity(0.4), blurRadius: 25, offset: const Offset(0, 8))],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  child: Center(child: Text('$_cartTotalItems', style: _tajawal(size: 16, weight: FontWeight.w900, color: const Color(0xFFF25C05)))),
+                ),
+                const SizedBox(width: 12),
+                Text('${_cartTotalAmount.toStringAsFixed(0)} ر.ي', style: _tajawal(size: 18, weight: FontWeight.w900, color: Colors.white)),
+              ],
+            ),
+            Row(
+              children: [
+                Text('إتمام الطلب', style: _tajawal(size: 16.5, weight: FontWeight.w900, color: Colors.white)),
+                const SizedBox(width: 8),
+                const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 14),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
