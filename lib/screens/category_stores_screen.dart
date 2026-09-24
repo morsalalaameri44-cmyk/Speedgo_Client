@@ -29,29 +29,29 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
 
   List<Map<String, dynamic>> _stores = [];
   bool _isLoading = true;
-  bool _isGridView = false;
+  bool _isGridView = false; // نمط العرض: false = قائمة، true = شبكة
 
   @override
   void initState() {
     super.initState();
     _doorController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1200),
     );
 
-    // حركة انقسام البوابة للخارج (من 0 إلى 1)
+    // حركة فتح البوابة بسلاسة ومتعة بصرية
     _doorOpenAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _doorController,
-        curve: const Interval(0.2, 0.85, curve: Curves.easeInOutCubic),
+        curve: const Interval(0.1, 0.85, curve: Curves.easeInOutCubic),
       ),
     );
 
-    // ظهور المحتوى الداخلي عند اتساع الانقسام
+    // ظهور المحتوى بشكل دافئ أثناء انقسام البوابة
     _fadeContentAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _doorController,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
+        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
       ),
     );
 
@@ -65,14 +65,13 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     super.dispose();
   }
 
-  // جلب متاجر هذا القسم بشكل صارم وحصري
+  // جلب متاجر هذا القسم حصرياً بدون دمج المتاجر الأخرى
   Future<void> _fetchCategoryStoresOnly() async {
     try {
       final res = await widget.supabase.from('stores').select();
       if (mounted) {
         final list = List<Map<String, dynamic>>.from(res as List);
         
-        // تصفية صارمة: جلب المتاجر التي يطابق قسمها اسم القسم المختار فقط
         final filtered = list.where((s) {
           final cat = (s['category'] ?? '').toString().trim().toLowerCase();
           final targetCat = widget.categoryName.trim().toLowerCase();
@@ -80,7 +79,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
         }).toList();
 
         setState(() {
-          _stores = filtered; // إسناد المتاجر المفلترة فقط بدون إرجاع القائمة الكاملة
+          _stores = filtered;
           _isLoading = false;
         });
       }
@@ -100,55 +99,54 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: const Color(0xFFFFFEEF),
+        backgroundColor: const Color(0xFFF8F9FA), // خلفية رمادية فاتحة ونظيفة
         body: Stack(
           children: [
-            // 1. المحتوى الداخلي (المتاجر الخاصة بالقسم) يظهر خلف البوابة
-            Positioned.fill(
-              child: FadeTransition(
-                opacity: _fadeContentAnimation,
-                child: SafeArea(
-                  child: Column(
-                    children: [
-                      _buildHeader(),
-                      _buildViewToggle(),
-                      Expanded(
-                        child: _isLoading
-                            ? const Center(child: CircularProgressIndicator(color: Color(0xFFF25C05)))
-                            : _stores.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.storefront_outlined, size: 50, color: Color(0xFF9E9E9E)),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'لا توجد متاجر مضافة في قسم (${widget.categoryName}) حالياً',
-                                          style: _tajawal(size: 15, weight: FontWeight.w700, color: const Color(0xFF757575)),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : _isGridView ? _buildGridList() : _buildVerticalList(),
-                      ),
-                    ],
+            // 1. المحتوى الأساسي المترتب ناصع البياض
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  _buildViewToggle(),
+                  Expanded(
+                    child: FadeTransition(
+                      opacity: _fadeContentAnimation,
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator(color: Color(0xFFF25C05)))
+                          : _stores.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.storefront_outlined, size: 55, color: Color(0xFFBDBDBD)),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'لا توجد متاجر مضافة في قسم (${widget.categoryName}) حالياً',
+                                        style: _tajawal(size: 15, weight: FontWeight.w700, color: const Color(0xFF757575)),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : _isGridView ? _buildGridList() : _buildVerticalList(),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
 
-            // 2. انقسام بطاقة القسم إلى نصفين كالبوابة (Door Split Effect)
+            // 2. انقسام كارت القسم كالبوابة (Left & Right Door Split)
             AnimatedBuilder(
               animation: _doorController,
               builder: (context, child) {
-                final splitOffset = _doorOpenAnimation.value * (size.width / 2);
                 if (_doorOpenAnimation.value >= 0.98) {
-                  return const SizedBox.shrink(); // إخفاء البوابة بعد اكتمال الانقسام
+                  return const SizedBox.shrink(); // اختفاء البوابة بعد تمام الانقسام
                 }
+
+                final splitOffset = _doorOpenAnimation.value * (size.width / 2);
 
                 return Stack(
                   children: [
-                    // النصف الأيمن للبطاقة المنقسمة
+                    // البوابة اليمنى
                     Positioned(
                       top: 0,
                       bottom: 0,
@@ -161,10 +159,13 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                             end: Alignment.bottomRight,
                             colors: widget.gradientColors,
                           ),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(-3, 0))
+                          ],
                         ),
                         child: Center(
                           child: Opacity(
-                            opacity: (1.0 - _doorOpenAnimation.value).clamp(0.0, 1.0),
+                            opacity: (1.0 - (_doorOpenAnimation.value * 2)).clamp(0.0, 1.0),
                             child: Text(
                               widget.categoryName,
                               style: _tajawal(size: 22, weight: FontWeight.w900, color: Colors.white),
@@ -173,7 +174,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                         ),
                       ),
                     ),
-                    // النصف الأيسر للبطاقة المنقسمة
+                    // البوابة اليسرى
                     Positioned(
                       top: 0,
                       bottom: 0,
@@ -186,6 +187,9 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                             end: Alignment.bottomRight,
                             colors: widget.gradientColors,
                           ),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(3, 0))
+                          ],
                         ),
                       ),
                     ),
@@ -200,21 +204,25 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: Container(
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A), size: 20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF1A1A1A), size: 20),
             ),
-            onPressed: () => Navigator.pop(context),
           ),
-          Text('متاجر ${widget.categoryName}', style: _tajawal(size: 20, weight: FontWeight.w900)),
-          const SizedBox(width: 40),
+          Text('متاجر ${widget.categoryName}', style: _tajawal(size: 19, weight: FontWeight.w900)),
+          const SizedBox(width: 36),
         ],
       ),
     );
@@ -222,54 +230,57 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
 
   Widget _buildViewToggle() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(16)),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isGridView = false),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: !_isGridView ? const Color(0xFFF25C05) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.format_list_bulleted, size: 18, color: !_isGridView ? Colors.white : const Color(0xFF757575)),
-                    const SizedBox(width: 6),
-                    Text('قائمة', style: _tajawal(size: 14, weight: FontWeight.w800, color: !_isGridView ? Colors.white : const Color(0xFF757575))),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _isGridView = true),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _isGridView ? const Color(0xFFF25C05) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.grid_view_rounded, size: 18, color: _isGridView ? Colors.white : const Color(0xFF757575)),
-                    const SizedBox(width: 6),
-                    Text('شبكة', style: _tajawal(size: 14, weight: FontWeight.w800, color: _isGridView ? Colors.white : const Color(0xFF757575))),
-                  ],
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(16)),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isGridView = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: !_isGridView ? const Color(0xFFF25C05) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.format_list_bulleted, size: 18, color: !_isGridView ? Colors.white : const Color(0xFF757575)),
+                      const SizedBox(width: 6),
+                      Text('قائمة', style: _tajawal(size: 13.5, weight: FontWeight.w800, color: !_isGridView ? Colors.white : const Color(0xFF757575))),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isGridView = true),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _isGridView ? const Color(0xFFF25C05) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.grid_view_rounded, size: 18, color: _isGridView ? Colors.white : const Color(0xFF757575)),
+                      const SizedBox(width: 6),
+                      Text('شبكة', style: _tajawal(size: 13.5, weight: FontWeight.w800, color: _isGridView ? Colors.white : const Color(0xFF757575))),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -278,7 +289,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: _stores.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 16),
+      separatorBuilder: (_, __) => const SizedBox(height: 14),
       itemBuilder: (context, index) {
         return _buildStoreCardList(_stores[index]);
       },
@@ -303,70 +314,49 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
         }
       },
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 6))],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 4))],
         ),
         child: Row(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB300)),
-                      const SizedBox(width: 4),
-                      Text('4.5', style: _tajawal(size: 12, weight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: const Color(0xFFFFF2EB), borderRadius: BorderRadius.circular(10)),
-                  child: Text('قَيِّم المتجر', style: _tajawal(size: 11, weight: FontWeight.w800, color: const Color(0xFFF25C05))),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(name, style: _tajawal(size: 16.5, weight: FontWeight.w900)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(6)),
-                  child: Text(cat, style: _tajawal(size: 11, weight: FontWeight.w600, color: const Color(0xFF757575))),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Text('30 دقيقة', style: _tajawal(size: 11.5, weight: FontWeight.w700, color: const Color(0xFF5C677D))),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.access_time_filled, size: 13, color: Color(0xFFF25C05)),
-                    const SizedBox(width: 10),
-                    Text('سريع', style: _tajawal(size: 11.5, weight: FontWeight.w700, color: const Color(0xFF2A9D8F))),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.delivery_dining, size: 15, color: Color(0xFFF25C05)),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(width: 14),
             ClipRRect(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               child: Image.network(
                 img,
-                width: 75,
-                height: 75,
+                width: 80,
+                height: 80,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(width: 75, height: 75, color: const Color(0xFFF5F5F5), child: const Icon(Icons.store, color: Color(0xFFBDBDBD))),
+                errorBuilder: (_, __, ___) => Container(width: 80, height: 80, color: const Color(0xFFF5F5F5), child: const Icon(Icons.store, color: Color(0xFFBDBDBD))),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: _tajawal(size: 16, weight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(cat, style: _tajawal(size: 12, weight: FontWeight.w500, color: const Color(0xFF757575))),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB300)),
+                      const SizedBox(width: 3),
+                      Text('4.5', style: _tajawal(size: 12, weight: FontWeight.w700)),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.access_time_filled, size: 13, color: Color(0xFF5C677D)),
+                      const SizedBox(width: 3),
+                      Text('30 دقيقة', style: _tajawal(size: 11.5, weight: FontWeight.w600, color: const Color(0xFF757575))),
+                      const SizedBox(width: 12),
+                      const Icon(Icons.delivery_dining, size: 15, color: Color(0xFF2A9D8F)),
+                      const SizedBox(width: 3),
+                      Text('سريع', style: _tajawal(size: 11.5, weight: FontWeight.w600, color: const Color(0xFF2A9D8F))),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -382,7 +372,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
         crossAxisCount: 2,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
-        mainAxisExtent: 210,
+        mainAxisExtent: 200,
       ),
       itemCount: _stores.length,
       itemBuilder: (context, index) {
@@ -422,16 +412,16 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(name, style: _tajawal(size: 15, weight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(name, style: _tajawal(size: 14.5, weight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB300)),
-                    const SizedBox(width: 4),
-                    Text('4.5', style: _tajawal(size: 12, weight: FontWeight.w800)),
+                    const SizedBox(width: 3),
+                    Text('4.5', style: _tajawal(size: 12, weight: FontWeight.w700)),
                     const SizedBox(width: 10),
-                    Text('30 دقيقة', style: _tajawal(size: 11, weight: FontWeight.w700, color: const Color(0xFF757575))),
+                    Text('30 دقيقة', style: _tajawal(size: 11, weight: FontWeight.w600, color: const Color(0xFF757575))),
                   ],
                 ),
               ],
