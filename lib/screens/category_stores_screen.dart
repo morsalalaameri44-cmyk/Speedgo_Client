@@ -23,51 +23,64 @@ class CategoryStoresScreen extends StatefulWidget {
 
 class _CategoryStoresScreenState extends State<CategoryStoresScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animController;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _doorController;
+  late Animation<double> _doorOpenAnimation;
+  late Animation<double> _fadeContentAnimation;
 
   List<Map<String, dynamic>> _stores = [];
   bool _isLoading = true;
-  bool _isGridView = false; // نمط العرض: false = قائمة، true = شبكة
+  bool _isGridView = false;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+    _doorController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: const Duration(milliseconds: 900),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
-    );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
+    // حركة انقسام البوابة للخارج (من 0 إلى 1)
+    _doorOpenAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _doorController,
+        curve: const Interval(0.2, 0.85, curve: Curves.easeInOutCubic),
+      ),
     );
 
-    _animController.forward();
-    _fetchCategoryStores();
+    // ظهور المحتوى الداخلي عند اتساع الانقسام
+    _fadeContentAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _doorController,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeIn),
+      ),
+    );
+
+    _doorController.forward();
+    _fetchCategoryStoresOnly();
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _doorController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchCategoryStores() async {
+  // جلب متاجر هذا القسم بشكل صارم وحصري
+  Future<void> _fetchCategoryStoresOnly() async {
     try {
       final res = await widget.supabase.from('stores').select();
       if (mounted) {
         final list = List<Map<String, dynamic>>.from(res as List);
+        
+        // تصفية صارمة: جلب المتاجر التي يطابق قسمها اسم القسم المختار فقط
         final filtered = list.where((s) {
-          final cat = (s['category'] ?? '').toString().toLowerCase();
-          return cat.contains(widget.categoryName.toLowerCase());
+          final cat = (s['category'] ?? '').toString().trim().toLowerCase();
+          final targetCat = widget.categoryName.trim().toLowerCase();
+          return cat == targetCat || cat.contains(targetCat) || targetCat.contains(cat);
         }).toList();
 
         setState(() {
-          _stores = filtered.isNotEmpty ? filtered : list;
+          _stores = filtered; // إسناد المتاجر المفلترة فقط بدون إرجاع القائمة الكاملة
           _isLoading = false;
         });
       }
@@ -82,14 +95,117 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: const Color(0xFFFFFEEF),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
+        body: Stack(
+          children: [
+            // 1. المحتوى الداخلي (المتاجر الخاصة بالقسم) يظهر خلف البوابة
+            Positioned.fill(
+              child: FadeTransition(
+                opacity: _fadeContentAnimation,
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      _buildHeader(),
+                      _buildViewToggle(),
+                      Expanded(
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator(color: Color(0xFFF25C05)))
+                            : _stores.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.storefront_outlined, size: 50, color: Color(0xFF9E9E9E)),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'لا توجد متاجر مضافة في قسم (${widget.categoryName}) حالياً',
+                                          style: _tajawal(size: 15, weight: FontWeight.w700, color: const Color(0xFF757575)),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : _isGridView ? _buildGridList() : _buildVerticalList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // 2. انقسام بطاقة القسم إلى نصفين كالبوابة (Door Split Effect)
+            AnimatedBuilder(
+              animation: _doorController,
+              builder: (context, child) {
+                final splitOffset = _doorOpenAnimation.value * (size.width / 2);
+                if (_doorOpenAnimation.value >= 0.98) {
+                  return const SizedBox.shrink(); // إخفاء البوابة بعد اكتمال الانقسام
+                }
+
+                return Stack(
+                  children: [
+                    // النصف الأيمن للبطاقة المنقسمة
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: -splitOffset,
+                      width: size.width / 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: widget.gradientColors,
+                          ),
+                        ),
+                        child: Center(
+                          child: Opacity(
+                            opacity: (1.0 - _doorOpenAnimation.value).clamp(0.0, 1.0),
+                            child: Text(
+                              widget.categoryName,
+                              style: _tajawal(size: 22, weight: FontWeight.w900, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // النصف الأيسر للبطاقة المنقسمة
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: -splitOffset,
+                      width: size.width / 2,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: widget.gradientColors,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
@@ -97,42 +213,18 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
             ),
             onPressed: () => Navigator.pop(context),
           ),
-          title: Text(
-            'متاجر ${widget.categoryName}',
-            style: _tajawal(size: 20, weight: FontWeight.w900),
-          ),
-          centerTitle: true,
-        ),
-        body: ScaleTransition(
-          scale: _scaleAnimation,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                _buildViewToggle(),
-                Expanded(
-                  child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: Color(0xFFF25C05)))
-                      : _stores.isEmpty
-                          ? Center(child: Text('لا توجد متاجر متاحة حالياً', style: _tajawal(size: 15, weight: FontWeight.w700, color: const Color(0xFF757575))))
-                          : _isGridView ? _buildGridList() : _buildVerticalList(),
-                ),
-              ],
-            ),
-          ),
-        ),
+          Text('متاجر ${widget.categoryName}', style: _tajawal(size: 20, weight: FontWeight.w900)),
+          const SizedBox(width: 40),
+        ],
       ),
     );
   }
 
   Widget _buildViewToggle() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F0F0),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFFF0F0F0), borderRadius: BorderRadius.circular(16)),
       child: Row(
         children: [
           Expanded(
@@ -188,8 +280,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
       itemCount: _stores.length,
       separatorBuilder: (_, __) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final store = _stores[index];
-        return _buildStoreCardList(store);
+        return _buildStoreCardList(_stores[index]);
       },
     );
   }
@@ -216,13 +307,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 6))],
         ),
         child: Row(
           children: [
@@ -231,10 +316,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     children: [
                       const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB300)),
@@ -246,10 +328,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF2EB),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  decoration: BoxDecoration(color: const Color(0xFFFFF2EB), borderRadius: BorderRadius.circular(10)),
                   child: Text('قَيِّم المتجر', style: _tajawal(size: 11, weight: FontWeight.w800, color: const Color(0xFFF25C05))),
                 ),
               ],
@@ -262,10 +341,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                  decoration: BoxDecoration(color: const Color(0xFFF5F5F5), borderRadius: BorderRadius.circular(6)),
                   child: Text(cat, style: _tajawal(size: 11, weight: FontWeight.w600, color: const Color(0xFF757575))),
                 ),
                 const SizedBox(height: 8),
@@ -290,12 +366,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
                 width: 75,
                 height: 75,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 75,
-                  height: 75,
-                  color: const Color(0xFFF5F5F5),
-                  child: const Icon(Icons.store, color: Color(0xFFBDBDBD)),
-                ),
+                errorBuilder: (_, __, ___) => Container(width: 75, height: 75, color: const Color(0xFFF5F5F5), child: const Icon(Icons.store, color: Color(0xFFBDBDBD))),
               ),
             ),
           ],
@@ -336,13 +407,7 @@ class _CategoryStoresScreenState extends State<CategoryStoresScreen>
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
             ),
             child: Column(
               children: [
