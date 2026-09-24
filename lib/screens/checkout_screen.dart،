@@ -30,11 +30,13 @@ class CartItemModel {
 class CheckoutScreen extends StatefulWidget {
   final SupabaseClient supabase;
   final List<CartItemModel> initialCartItems;
+  final String? storeId;
 
   const CheckoutScreen({
     super.key,
     required this.supabase,
     required this.initialCartItems,
+    this.storeId,
   });
 
   @override
@@ -112,7 +114,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       final newOrderData = {
-        'store_id': '9e1755d3-994c-49bb-b188-e3117b6260f4',
+        'store_id': widget.storeId ?? "9e1755d3-994c-49bb-b188-e3117b6260f4",
         'customer_id': user.id,
         'customer_name': customerName,
         'customer_phone': customerPhone,
