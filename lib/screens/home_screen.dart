@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase/supabase.dart';
 import 'package:speedgo_client/screens/store_screen.dart';
+import 'package:speedgo_client/screens/category_stores_screen.dart';
 
 class AppColors {
   static const Color primary = Color(0xFFF25C05);
@@ -58,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.initState();
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 600),
     );
     _fetchData();
   }
@@ -134,15 +135,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
-  void _triggerShake(int index, String categoryName) {
+  void _triggerShake(int index, String categoryName, String categoryImg, List<Color> gradient) {
     setState(() => _shakingIndex = index);
     _shakeController.forward(from: 0).whenComplete(() {
       if (mounted) {
-        setState(() {
-          _shakingIndex = null;
-          _activeCategoryFilter = (_activeCategoryFilter == categoryName) ? 'الكل' : categoryName;
-          _applyFilters();
-        });
+        setState(() => _shakingIndex = null);
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 450),
+            pageBuilder: (_, animation, __) => FadeTransition(
+              opacity: animation,
+              child: CategoryStoresScreen(
+                supabase: widget.supabase,
+                categoryName: categoryName,
+                categoryImage: categoryImg,
+                gradientColors: gradient,
+              ),
+            ),
+          ),
+        );
       }
     });
   }
@@ -166,7 +178,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   double _shakeScale(double t) => _interpolateKeyframes(
         t,
         const [0.0, 0.15, 0.30, 0.45, 0.60, 0.75, 0.90, 1.0],
-        const [1.0, 1.05, 1.05, 1.05, 1.05, 1.05, 1.05, 1.0],
+        const [1.0, 1.15, 1.25, 1.35, 1.45, 1.55, 1.65, 1.8],
       );
 
   TextStyle _tajawal({
@@ -471,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           final gradient = kCategoryGradients[index % kCategoryGradients.length];
 
           return GestureDetector(
-            onTap: () => _triggerShake(index, name),
+            onTap: () => _triggerShake(index, name, imgUrl, gradient),
             child: AnimatedBuilder(
               animation: _shakeController,
               builder: (context, child) {
